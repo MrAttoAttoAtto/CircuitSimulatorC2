@@ -105,3 +105,4 @@ venv.bak/
 
 # Etc
 .DS_Store
+fig*.svg
