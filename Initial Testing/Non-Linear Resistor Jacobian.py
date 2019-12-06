@@ -6,6 +6,7 @@ import numpy as np
 input_vec = [13, -12, 234]
 # Resistance in ohms (both resistors)
 r = 1
+R = 1e-40
 
 while True:
     # Load the variables from the input vector
@@ -17,12 +18,12 @@ while True:
     result_vector = [0, 0, 0]
 
     result_vector[0] = ((v1-v2)/r)**2-iv
-    result_vector[1] = -((v1-v2)/r)**2+v2/r
+    result_vector[1] = -((v1-v2)/r)**2+v2/R
     result_vector[2] = v1-10
 
     # Create the Jacobian for this input vector
     g = 2*(v1-v2)/(r**2)
-    jac = np.array([[g,-g,-1],[-g,g+1/r,0],[1,0,0]])
+    jac = np.array([[g,-g,-1],[-g,g+1/R,0],[1,0,0]])
 
     # Calculate the new (better) input vector by doing new x = old x - J(x)^-1*F(x), where J(x)^-1 is the inverse Jacobian of x, and F(x) is the result vector given by x
     inv_jac = np.linalg.inv(jac)
