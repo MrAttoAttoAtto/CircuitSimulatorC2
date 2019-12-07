@@ -1,4 +1,3 @@
-
 import math
 import subprocess
 import time
@@ -8,16 +7,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg
 
-import utils
-
-lapack_inverse = utils.make_lapack_inverse(3)
-
-
 # Initial guess
-input_vec = [3, 0, 1e-3]
+input_vec = [3, 0, 0, 1e-3]
 
 # Resistance in Ohms
-R = 1e5
+R = 5e3
+
+# Capacitance in Farads
+C = 500e-6
 
 # Temperature (kelvin)
 T = 293.5
@@ -30,20 +27,24 @@ q = 1.60217662e-19
 # Thermal voltage
 V_T = k*T/q
 
-# Diode ideality (1 is ideal)
+# Diode ideality (1 is ideal) (all diodes)
 n = 1
 
-# Diode saturation current
+nV_T = n * V_T
+
+# Diode saturation current (all diodes)
 I_s = 1e-12 # LOW
 
+I_s_nV_T = I_s/nV_T
+
 # Frequency of the AC source in Hertz
-f = 60
+f = 250e-3
 
 # AC peak
 Vin_AC_peak = 10
 
 # DC component
-Vin_DC = 3
+Vin_DC = 0
 
 sin_multiplier = f*2*math.pi
 
@@ -56,30 +57,43 @@ def get_Vin(t):
 t = 1e-5
 delta_t = 1e-5
 
+old_v2 = 0
+old_v3 = 0
+
+# Deriv. for current from capacitor
+g_c1 = C/delta_t
 
 # Holds results for plotting
-results = [[],[]]
+results = [[],[],[],[],[]]
 
+h = 0
+kool = 0
 start = time.time()
 while True:
 
     # Load the variables from the input vector
     v1 = input_vec[0]
     v2 = input_vec[1]
-    iv = input_vec[2]
+    v3 = input_vec[2]
+    iv = input_vec[3]
 
-    # Calculate the values in result vector
-    result_vector = [0, 0, 0]
+    # Calculate the values in result vector BUT MINUSED
+    result_vector = [0, 0, 0, 0]
 
-    result_vector[0] = -(I_s*(math.exp((v1-v2)/(n*V_T)) - 1) - iv)
-    result_vector[1] = -(v2/R-I_s*(math.exp((v1-v2)/(n*V_T)) - 1))
-    result_vector[2] = -(v1-get_Vin(t)) # Put back T!
+    result_vector[0] = -(I_s*(math.exp((v1-v2)/(nV_T)) - 1) - I_s*(math.exp((v3-v1)/(nV_T)) - 1) - iv) # I at 1
+    result_vector[1] = -(C*(v2-old_v2-v3+old_v3)/delta_t + (v2-v3)/R - I_s*(math.exp((v1-v2)/(nV_T)) - 1) - I_s*(math.exp((-v2)/(nV_T)) - 1)) # I at 2
+    result_vector[2] = -(I_s*(math.exp((v3-v1)/(nV_T)) - 1) + I_s*(math.exp((v3)/(nV_T)) - 1) - (v2-v3)/R - C*(v2-old_v2-v3+old_v3)/delta_t) # I at 3
+    result_vector[3] = -(v1-get_Vin(t)) # P.D. at 1
 
     # Create the Jacobian for this input vector
-    g = (I_s/(n*V_T)) * math.exp((v1-v2)/(n*V_T))
-    jac = np.array([[g, -g, -1],
-                    [-g, g + 1/R, 0],
-                    [1, 0, 0]])
+    d1 = I_s_nV_T * math.exp((v1-v2)/(nV_T))
+    d2 = I_s_nV_T * math.exp((v3-v1)/(nV_T))
+    d3 = I_s_nV_T * math.exp((-v2)/(nV_T))
+    d4 = I_s_nV_T * math.exp((v3)/(nV_T))
+    jac = np.array([[d1 + d2, -d1, -d2, -1],
+                    [-d1, 1/R + d1 + d3 + g_c1, -1/R - g_c1, 0],
+                    [-d2, -1/R - g_c1, d2 + d4 + 1/R + g_c1, 0],
+                    [1, 0, 0, 0]])
     
     '''
     # Calculate the new (better) input vector by doing new x = old x - J(x)^(-1)*F(x), where J(x)^(-1) is the inverse Jacobian of x, and F(x) is the result vector given by x
@@ -91,23 +105,38 @@ while True:
     delta_in = scipy.linalg.lapack.dgesv(jac, result_vector)[2]
     input_vec += delta_in
 
+    #print(delta_in)
+
+    #print(delta_in)
+    #print(input_vec)
+    #print()
+
     # If the better guess is indistinguishable from the prior guess, we probably have the right value...
     if (abs(delta_in) < 1e-5).all():
         results[0].append(t)
-        results[1].append(v2)
+        results[1].append(v2-v3)
+        results[2].append(v2)
+        results[3].append(v3)
 
+        kool = 0
         # Updates the variables like time and the "old" voltages
         t += delta_t
-
-        if t > 60/60:
+        old_v2 = v2
+        old_v3 = v3
+        h += 1
+        if h > 1450000:
+        #if t > 4/60:
             print(time.time()-start)
             # Plots nice graph
             fig, ax = plt.subplots(1, 1, figsize=(20, 9))
             ax.scatter(results[0], results[1])
-            ax.scatter(results[0], [0 if get_Vin(t) <= 0 else get_Vin(t) for t in results[0]])
-            # '''
+            ax.scatter(results[0], [get_Vin(t) for t in results[0]])
+            ax.scatter(results[0], results[2])
+            ax.scatter(results[0], results[3])
+            #print(results[3])
+            #'''
             plt.show()
-            # '''
+            #'''
 
             '''
             plt.savefig("fig.svg", format='svg', dpi=300)
