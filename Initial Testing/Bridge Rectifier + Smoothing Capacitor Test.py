@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg
 
+# GMin
+gmin = 1e-12
+
 # Initial guess
 input_vec = [3, 0, 0, 1e-3]
 
@@ -38,10 +41,10 @@ I_s = 1e-12 # LOW
 I_s_nV_T = I_s/nV_T
 
 # Frequency of the AC source in Hertz
-f = 250e-3
+f = 0.25
 
 # AC peak
-Vin_AC_peak = 10
+Vin_AC_peak = 10*math.sqrt(2)
 
 # DC component
 Vin_DC = 0
@@ -66,13 +69,13 @@ g_c1 = C/delta_t
 # Holds results for plotting
 results = [[],[],[],[],[]]
 
-h = 0
-kool = 0
+# The number of iterastions this time step has taken - too many and we'll reset the input vector
+num_tries = 0
 start = time.time()
 while True:
 
     # Load the variables from the input vector
-    v1 = input_vec[0]
+    v1 = get_Vin(t) #input_vec[0]
     v2 = input_vec[1]
     v3 = input_vec[2]
     iv = input_vec[3]
@@ -86,10 +89,10 @@ while True:
     result_vector[3] = -(v1-get_Vin(t)) # P.D. at 1
 
     # Create the Jacobian for this input vector
-    d1 = I_s_nV_T * math.exp((v1-v2)/(nV_T))
-    d2 = I_s_nV_T * math.exp((v3-v1)/(nV_T))
-    d3 = I_s_nV_T * math.exp((-v2)/(nV_T))
-    d4 = I_s_nV_T * math.exp((v3)/(nV_T))
+    d1 = max(I_s_nV_T * math.exp((v1-v2)/(nV_T)), gmin)
+    d2 = max(I_s_nV_T * math.exp((v3-v1)/(nV_T)), gmin)
+    d3 = max(I_s_nV_T * math.exp((-v2)/(nV_T)), gmin)
+    d4 = max(I_s_nV_T * math.exp((v3)/(nV_T)), gmin)
     jac = np.array([[d1 + d2, -d1, -d2, -1],
                     [-d1, 1/R + d1 + d3 + g_c1, -1/R - g_c1, 0],
                     [-d2, -1/R - g_c1, d2 + d4 + 1/R + g_c1, 0],
@@ -118,21 +121,20 @@ while True:
         results[2].append(v2)
         results[3].append(v3)
 
-        kool = 0
         # Updates the variables like time and the "old" voltages
         t += delta_t
         old_v2 = v2
         old_v3 = v3
-        h += 1
-        if h > 1450000:
-        #if t > 4/60:
+        num_tries = 0
+
+        if t > 60*8/60:
             print(time.time()-start)
             # Plots nice graph
             fig, ax = plt.subplots(1, 1, figsize=(20, 9))
             ax.scatter(results[0], results[1])
             ax.scatter(results[0], [get_Vin(t) for t in results[0]])
-            ax.scatter(results[0], results[2])
-            ax.scatter(results[0], results[3])
+            #ax.scatter(results[0], results[2])
+            #ax.scatter(results[0], results[3])
             #print(results[3])
             #'''
             plt.show()
@@ -144,3 +146,8 @@ while True:
             '''
 
             break
+
+    else:
+        num_tries += 1
+        if num_tries % 100 == 0:
+            print(num_tries)
