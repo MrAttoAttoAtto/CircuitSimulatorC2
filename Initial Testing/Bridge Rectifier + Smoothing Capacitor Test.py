@@ -1,6 +1,7 @@
 import math
 import subprocess
 import time
+import json
 from copy import deepcopy
 
 import matplotlib.pyplot as plt
@@ -17,7 +18,7 @@ input_vec = [3, 0, 0, 1e-3]
 R = 5e3
 
 # Capacitance in Farads
-C = 500e-6
+C = 20e-6
 
 # Temperature (kelvin)
 T = 293.5
@@ -41,7 +42,7 @@ I_s = 1e-12 # LOW
 I_s_nV_T = I_s/nV_T
 
 # Frequency of the AC source in Hertz
-f = 0.25
+f = 60
 
 # AC peak
 Vin_AC_peak = 10*math.sqrt(2)
@@ -127,7 +128,7 @@ while True:
         old_v3 = v3
         num_tries = 0
 
-        if t > 60*8/60:
+        if t > 4/60:
             print(time.time()-start)
             # Plots nice graph
             fig, ax = plt.subplots(1, 1, figsize=(20, 9))
@@ -139,6 +140,7 @@ while True:
             #'''
             plt.show()
             #'''
+            json.dump(results[1], open("./res.json", "w+"))
 
             '''
             plt.savefig("fig.svg", format='svg', dpi=300)
@@ -149,5 +151,5 @@ while True:
 
     else:
         num_tries += 1
-        if num_tries % 100 == 0:
+        if num_tries % 10000 == 0:
             print(num_tries)
