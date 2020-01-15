@@ -114,8 +114,8 @@ while True:
             fig, ax = plt.subplots(1, 1, figsize=(20, 9))
             ax.scatter(results[0], results[1])
             ax.scatter(results[0], [get_Vin(t) for t in results[0]])
-            moreres = json.load(open("./res.json", "r"))
-            ax.scatter(results[0], moreres)
+            #moreres = json.load(open("./res.json", "r"))
+            #ax.scatter(results[0], moreres)
             #'''
             plt.show()
             #'''
