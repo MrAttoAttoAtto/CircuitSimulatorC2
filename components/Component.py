@@ -2,7 +2,6 @@ import abc
 from typing import List
 
 from general.Circuit import Circuit
-
 from general.Environment import Environment
 
 
@@ -10,6 +9,8 @@ class Component(abc.ABC):
     """
     Abstract base class for components
     """
+
+    isVoltageSource = False
 
     @abc.abstractmethod
     def __init__(self):
