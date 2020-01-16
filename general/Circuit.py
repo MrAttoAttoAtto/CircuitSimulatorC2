@@ -38,39 +38,49 @@ class Circuit:
         self.componentNodes.append((component, nodes))
 
     def finalise(self, groundNode: int):
+        # We remove rows and columns of ground...
+        ground_entry = self.node_mapping[groundNode]
+        for node in self.node_mapping.keys():
+            # Shift down once
+            if self.node_mapping[node] > ground_entry:
+                self.node_mapping[node] -= 1
+        self.matrix_n -= 1
         self.jacobian = np.array([[MutableFloat() for _ in range(self.matrix_n)] for _ in range(self.matrix_n)])
         self.resultVector = np.array([MutableFloat() for _ in range(self.matrix_n)])
-        self.inputVector = np.array([MutableFloat() for _ in range(self.matrix_n)])
+        self.inputVector = np.array([MutableFloat(1) for _ in range(self.matrix_n)])
         self.groundNode = groundNode
         for component in self.componentNodes:
             component[0].connect(self, component[1])
 
-        self.components = (component[0] for component in self.component_nodes)
+        self.components = (component[0] for component in self.componentNodes)
 
     def getInputReference(self, node: Union[Tuple[int], int]) -> MutableFloat:
-        return self.inputVector[self.node_mapping[node]]
+        return self.inputVector[self.node_mapping[node]] if node != self.groundNode else MutableFloat()
 
     def getResultReference(self, node: Union[Tuple[int], int]) -> MutableFloat:
-        return self.resultVector[self.node_mapping[node]]
+        return self.resultVector[self.node_mapping[node]] if node != self.groundNode else MutableFloat()
 
     def getJacobianReference(self, nodeA: Union[Tuple[int], int], nodeB: Union[Tuple[int], int]) -> MutableFloat:
-        return self.jacobian[self.node_mapping[nodeA], self.node_mapping[nodeB]]
+        return self.jacobian[self.node_mapping[nodeA], self.node_mapping[nodeB]] if nodeA != self.groundNode and nodeB != self.groundNode else MutableFloat()
 
     def simulate_step(self):
-        clear_vec = np.vectorize(lambda x: x.reset(0))
-        clear_vec(self.resultVector)
-        clear_vec(self.jacobian)
-        for component in self.components:
-            component.stamp(self.environment)
+        # Limit convergence
+        for _ in range(10):
+            clear_vec = np.vectorize(lambda x: x.reset(0))
+            clear_vec(self.resultVector)
+            clear_vec(self.jacobian)
+            for component in self.components:
+                component.stamp(self.environment)
 
-        extract_value = np.vectorize(lambda x: x.value)
-        jac = extract_value(self.jacobian)
-        resultVector = extract_value(self.resultVector)
+            extract_value = np.vectorize(lambda x: x.value)
+            jac = extract_value(self.jacobian)
+            resultVector = extract_value(self.resultVector)
 
-        # Solve matrices
-        delta_in = scipy.linalg.lapack.dgesv(jac, resultVector)[2]
-        self.inputVector -= delta_in
+            # Solve matrices
+            delta_in = scipy.linalg.lapack.dgesv(jac, resultVector)[2]
+            self.inputVector -= delta_in
 
-        # If the better guess is indistinguishable from the prior guess, we probably have the right value...
-        if (abs(delta_in) < 1e-5).all():
-            self.environment.time += self.delta_t
+            # If the better guess is indistinguishable from the prior guess, we probably have the right value...
+            if (abs(delta_in) < 1e-5).all():
+                self.environment.time += self.delta_t
+                return
