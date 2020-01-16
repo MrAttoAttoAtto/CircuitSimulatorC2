@@ -18,3 +18,6 @@ class Environment:
         # The starting time can always be 0: setting a different time would make no difference as only the passage of
         # time matters
         self.time = 0
+
+        # Placeholder
+        self.delta_t = None
