@@ -4,6 +4,7 @@ import numpy as np
 from general.Environment import Environment
 from utils.MutableFloat import MutableFloat
 
+
 class Circuit:
     def __init__(self, environment: Environment, delta_t: float):
         self.components = []
@@ -24,7 +25,7 @@ class Circuit:
             if n not in self.node_mapping.keys():
                 self.node_mapping[n] = [self.matrix_n, None]
                 self.matrix_n += 1
-            if component.isVoltageSource and self.node_mapping[n][1] == None:
+            if component.isVoltageSource and self.node_mapping[n][1] is None:
                 self.node_mapping[n][1] = self.matrix_n
                 self.matrix_n += 1
 
