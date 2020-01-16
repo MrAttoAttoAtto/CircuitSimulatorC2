@@ -10,7 +10,7 @@ class Resistor:
     A standard Ohm's law-obeying resistor
     """
 
-    isVoltageSource = False
+    isVoltageBased = False
 
     def __init__(self, resistance: float):
         """
@@ -53,19 +53,17 @@ class Resistor:
 
         frontNode, backNode = nodes
 
-        # As opposed to getInputCurrentReference for voltage sources etc.
-        # frontVoltageIndicator should be something usable to relate this value to a position in the Jacobian
-        self.frontVoltage = circuit.getInputVoltageReference(frontNode)
-        self.backVoltage = circuit.getInputVoltageReference(backNode)
+        self.frontVoltage = circuit.getInputReference(frontNode)
+        self.backVoltage = circuit.getInputReference(backNode)
 
-        self.frontCurrent = circuit.getResultCurrentReference(frontNode)
-        self.backCurrent = circuit.getResultCurrentReference(backNode)
+        self.frontCurrent = circuit.getResultReference(frontNode)
+        self.backCurrent = circuit.getResultReference(backNode)
 
         # Coordinate-type system with the jacobian: handled by the Circuit class
-        self.frontConductanceByFrontVoltage = circuit.getJacobianVoltageReference(frontNode, frontNode)
-        self.frontConductanceByBackVoltage = circuit.getJacobianVoltageReference(frontNode, backNode)
-        self.backConductanceByFrontVoltage = circuit.getJacobianVoltageReference(backNode, frontNode)
-        self.backConductanceByBackVoltage = circuit.getJacobianVoltageReference(backNode, backNode)
+        self.frontConductanceByFrontVoltage = circuit.getJacobianReference(frontNode, frontNode)
+        self.frontConductanceByBackVoltage = circuit.getJacobianReference(frontNode, backNode)
+        self.backConductanceByFrontVoltage = circuit.getJacobianReference(backNode, frontNode)
+        self.backConductanceByBackVoltage = circuit.getJacobianReference(backNode, backNode)
 
     def stamp(self, environment: Environment):
         """

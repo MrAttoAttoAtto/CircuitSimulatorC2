@@ -19,5 +19,5 @@ class Environment:
         # time matters
         self.time = 0
 
-        # Placeholder
+        # This parameter should be set by the circuit if/when it's needed
         self.delta_t = None

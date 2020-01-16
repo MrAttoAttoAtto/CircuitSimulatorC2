@@ -10,7 +10,7 @@ class Component(abc.ABC):
     Abstract base class for components
     """
 
-    isVoltageSource = False
+    isVoltageBased = False
 
     @abc.abstractmethod
     def __init__(self):
