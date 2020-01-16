@@ -10,7 +10,7 @@ class VoltageSource:
     A standard DC voltage source
     """
 
-    isVoltageSource = True
+    isVoltageBased = True
 
     def __init__(self, voltage: float):
         """
@@ -22,22 +22,18 @@ class VoltageSource:
         # Basic voltage source properties
         self.voltage = voltage
 
-        # e.g. iv
-        self.anodeInputCurrent = None
-        self.cathodeInputCurrent = None
+        self.voltageAcrossReference = None
 
-        # e.g. result_vector[0]
-        self.anodeResultCurrent = None
-        self.cathodeResultCurrent = None
+        self.anodeCurrent = None
+        self.cathodeCurrent = None
 
-        # e.g. result_vector[2]
-        self.anodeResultVoltage = None
-        self.cathodeResultVoltage = None
-
-        self.anodeJacobianCurrentReference = None
-        self.cathodeJacobianCurrentReference = None
-        self.anodeJacobianCurrentReferenceInv = None
-        self.cathodeJacobianCurrentReferenceInv = None
+        # Derivatives of the voltage source's voltage with respect to the anode and cathode voltages (always 1 or -1)
+        self.anodeVoltageJacobianVoltageReference = None
+        self.cathodeVoltageJacobianVoltageReference = None
+        # Derivatives of the anode and cathode internal currents wrt the current through the
+        # voltage source (i.e. always 1 or -1)
+        self.anodeNodeJacobianCurrentReference = None
+        self.cathodeNodeJacobianCurrentReference = None
 
     def connect(self, circuit: Circuit, nodes: List[int]):
         """
@@ -51,19 +47,20 @@ class VoltageSource:
 
         anode, cathode = nodes
 
-        self.anodeInputCurrent = circuit.getInputCurrentReference(anode)
-        self.cathodeInputCurrent = circuit.getInputCurrentReference(cathode)
+        anodeCathodeTuple = (anode, cathode)
 
-        self.anodeResultCurrent = circuit.getResultCurrentReference(anode)
-        self.cathodeResultCurrent = circuit.getResultCurrentReference(cathode)
+        self.currentThroughReference = circuit.getInputReference(anodeCathodeTuple)
+        self.anodeVoltageReference = circuit.getInputReference(anode)
+        self.cathodeVoltageReference = circuit.getInputReference(cathode)
 
-        self.anodeResultVoltage = circuit.getResultVoltageReference(anode)
-        self.cathodeResultVoltage = circuit.getResultVoltageReference(cathode)
+        self.voltageAcrossReference = circuit.getResultReference(anodeCathodeTuple)
+        self.anodeCurrentReference = circuit.getResultReference(anode)
+        self.cathodeCurrentReference = circuit.getResultReference(cathode)
 
-        self.anodeJacobianCurrentReference = circuit.getJacobianCurrentReference(anode, False)
-        self.cathodeJacobianCurrentReference = circuit.getJacobianCurrentReference(cathode, False)
-        self.anodeJacobianCurrentReferenceInv = circuit.getJacobianCurrentReference(anode, True)
-        self.cathodeJacobianCurrentReferenceInv = circuit.getJacobianCurrentReference(cathode, True)
+        self.anodeVoltageJacobianVoltageReference = circuit.getJacobianReference(anodeCathodeTuple, anode)
+        self.cathodeVoltageJacobianVoltageReference = circuit.getJacobianReference(anodeCathodeTuple, cathode)
+        self.anodeNodeJacobianCurrentReference = circuit.getJacobianReference(anode, anodeCathodeTuple)
+        self.cathodeNodeJacobianCurrentReference = circuit.getJacobianReference(cathode, anodeCathodeTuple)
 
     def stamp(self, environment: Environment):
         """
@@ -73,17 +70,17 @@ class VoltageSource:
         :return: None
         """
 
-        self.anodeResultCurrent -= self.anodeInputCurrent
-        self.cathodeInputCurrent += self.cathodeInputCurrent
+        # Finds the _difference_ between the voltage across it and what the voltage across it should really be
+        self.voltageAcrossReference -= (self.voltage - (self.anodeVoltageReference - self.cathodeVoltageReference))
 
-        # At the end, CIRCUIT MUST ADD ANODE/CATHODE INPUT VOLTAGE!!!!!!!!
-        self.anodeResultVoltage -= self.voltage
-        self.cathodeResultVoltage += self.voltage
+        # This is the current from the anode to the cathode - possibly not what you would expect
+        self.anodeCurrentReference += self.currentThroughReference
+        self.cathodeCurrentReference -= self.currentThroughReference
 
-        self.anodeJacobianCurrentReference += 1
-        self.cathodeJacobianCurrentReference -= 1
-        self.anodeJacobianCurrentReferenceInv += 1
-        self.cathodeJacobianCurrentReferenceInv -= 1
+        self.anodeVoltageJacobianVoltageReference += 1
+        self.cathodeVoltageJacobianVoltageReference -= 1
+        self.anodeNodeJacobianCurrentReference += 1
+        self.cathodeNodeJacobianCurrentReference -= 1
 
 
 Component.register(VoltageSource)

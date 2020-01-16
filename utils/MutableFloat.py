@@ -1,9 +1,9 @@
 class MutableFloat:
-    def __init__(self, value=0):
+    def __init__(self, value=0.0):
         self.value = value
         self.old = value
 
-    def reset(self, value):
+    def reset(self, value=0.0):
         self.old = self.value
         self.value = value
 

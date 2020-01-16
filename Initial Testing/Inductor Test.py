@@ -1,13 +1,10 @@
 
 import math
-import subprocess
 import time
-from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg
-
 
 # Initial guess
 input_vec = [3, 0, 1e-3]
@@ -16,7 +13,7 @@ input_vec = [3, 0, 1e-3]
 R = 1
 
 # Inductance in Henrys
-L = 1
+L = 100
 
 # Initial current
 I_0 = 0
@@ -44,7 +41,7 @@ delta_t = 1e-5
 old_v2 = 0
 
 # Holds results for plotting
-results = [[],[]]
+results = [[],[],[]]
 
 start = time.time()
 while True:
@@ -58,11 +55,11 @@ while True:
     result_vector = [0, 0, 0]
 
     result_vector[0] = -((v1-v2)/R - iv) # Current at 1
-    result_vector[1] = -(I_0 + L*delta_t/2*(old_v2+v2) - (v1-v2)/R) # Current at 2
+    result_vector[1] = -(I_0 + 1/L*delta_t*(old_v2+v2)/2 - (v1-v2)/R) # Current at 2
     result_vector[2] = -(v1-get_Vin(t)) # Voltage at 1
 
     # Create the Jacobian for this input vector
-    g = L*delta_t/2
+    g = 1/L*delta_t/2
     jac = np.array([[1/R, -1/R, -1],
                     [-1/R, g + 1/R, 0],
                     [1, 0, 0]])
@@ -86,12 +83,15 @@ while True:
         
         results[0].append(t)
         results[1].append(I_0)
+        results[2].append(v2)
 
         if t > 300/60:
             print(time.time()-start)
             # Plots nice graph
-            fig, ax = plt.subplots(1, 1, figsize=(20, 9))
-            ax.scatter(results[0], results[1])
+            fig, ax = plt.subplots(1, 2, figsize=(16, 8))
+            print(results[1][int(1/1e-5)])
+            ax[0].scatter(results[0], results[1])
+            ax[1].scatter(results[0], results[2])
             # '''
             plt.show()
             # '''
