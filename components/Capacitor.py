@@ -6,6 +6,9 @@ from general.Environment import Environment
 
 
 class Capacitor:
+
+    isVoltageBased = False
+
     def __init__(self, capacitance: float):
         self.capacitance = capacitance
 
@@ -29,20 +32,20 @@ class Capacitor:
 
     def connect(self, circuit: Circuit, nodes: List[int]):
         frontNode, backNode = nodes
-        self.frontVoltage = circuit.getInputVoltageReference(frontNode)
-        self.backVoltage = circuit.getInputVoltageReference(backNode)
+        self.frontVoltage = circuit.getInputReference(frontNode)
+        self.backVoltage = circuit.getInputReference(backNode)
 
-        self.frontCurrent = circuit.getResultCurrentReference(frontNode)
-        self.backCurrent = circuit.getResultCurrentReference(backNode)
+        self.frontCurrent = circuit.getResultReference(frontNode)
+        self.backCurrent = circuit.getResultReference(backNode)
 
-        self.frontConductanceByFrontVoltage = circuit.getJacobianVoltageReference(frontNode, frontNode)
-        self.frontConductanceByBackVoltage = circuit.getJacobianVoltageReference(frontNode, backNode)
-        self.backConductanceByFrontVoltage = circuit.getJacobianVoltageReference(backNode, frontNode)
-        self.backConductanceByBackVoltage = circuit.getJacobianVoltageReference(backNode, backNode)
+        self.frontConductanceByFrontVoltage = circuit.getJacobianReference(frontNode, frontNode)
+        self.frontConductanceByBackVoltage = circuit.getJacobianReference(frontNode, backNode)
+        self.backConductanceByFrontVoltage = circuit.getJacobianReference(backNode, frontNode)
+        self.backConductanceByBackVoltage = circuit.getJacobianReference(backNode, backNode)
 
     def stamp(self, environment: Environment):
         derivative_scale = self.capacitance / environment.delta_t
-        delta_v = (self.frontVoltage - self.backVoltage) - (self.frontVoltage.old - self.backVoltage.old)
+        delta_v = (self.frontVoltage.value - self.backVoltage.value) - (self.frontVoltage.old - self.backVoltage.old)
 
         self.frontCurrent += delta_v * derivative_scale
         self.backCurrent -= delta_v * derivative_scale

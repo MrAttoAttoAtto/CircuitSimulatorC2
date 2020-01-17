@@ -74,16 +74,16 @@ class Inductor:
         """
 
         # "Instantaneous" rate of change of current
-        dI_dt = (self.currentThroughReference - self.currentThroughReference.old) / environment.delta_t
+        dI_dt = (self.currentThroughReference.value - self.currentThroughReference.old) / environment.delta_t
 
         # Finds the _difference_ between the voltage across it and what the voltage across it should really be
         # When 0, that's good!
         self.voltageAcrossReference -= (self.inductance * dI_dt
-                                        - (self.frontVoltageReference - self.backVoltageReference))
+                                        - (self.frontVoltageReference.value - self.backVoltageReference.value))
 
         # This is the current from the anode to the cathode - possibly not what you would expect
-        self.frontCurrentReference += self.currentThroughReference
-        self.backCurrentReference -= self.currentThroughReference
+        self.frontCurrentReference += self.currentThroughReference.value
+        self.backCurrentReference -= self.currentThroughReference.value
 
         self.frontVoltageJacobianVoltageReference += 1
         self.backVoltageJacobianVoltageReference -= 1

@@ -52,7 +52,7 @@ class Circuit:
         for component in self.componentNodes:
             component[0].connect(self, component[1])
 
-        self.components = (component[0] for component in self.componentNodes)
+        self.components = [component[0] for component in self.componentNodes]
 
     def getInputReference(self, node: Union[Tuple[int], int]) -> MutableFloat:
         return self.inputVector[self.node_mapping[node]] if node != self.groundNode else MutableFloat()
@@ -64,21 +64,30 @@ class Circuit:
         return self.jacobian[self.node_mapping[nodeA], self.node_mapping[nodeB]] if nodeA != self.groundNode and nodeB != self.groundNode else MutableFloat()
 
     def simulate_step(self):
+        # TODO do better guessing!
+        clear_vec_one = np.vectorize(lambda x: x.reset(1))
+        clear_vec_one(self.inputVector)
+
         # Limit convergence
-        for _ in range(10):
+        for _ in range(100000):
+            updateVec = np.vectorize(lambda x: x.update())
+            updateVec(self.inputVector)
+
             clear_vec = np.vectorize(lambda x: x.reset(0))
             clear_vec(self.resultVector)
             clear_vec(self.jacobian)
+
             for component in self.components:
                 component.stamp(self.environment)
 
-            extract_value = np.vectorize(lambda x: x.value)
+            extract_value = np.vectorize(lambda x: x.live, otypes=[np.float64])
             jac = extract_value(self.jacobian)
-            resultVector = extract_value(self.resultVector)
+            resultVector = -extract_value(self.resultVector)
 
             # Solve matrices
-            delta_in = scipy.linalg.lapack.dgesv(jac, resultVector)[2]
-            self.inputVector -= delta_in
+            delta_in = scipy.linalg.lapack.dgesv(jac+1e-12, resultVector)[2]
+            for i, inputValue in enumerate(self.inputVector):
+                inputValue += delta_in[i]
 
             # If the better guess is indistinguishable from the prior guess, we probably have the right value...
             if (abs(delta_in) < 1e-5).all():

@@ -22,10 +22,13 @@ class VoltageSource:
         # Basic voltage source properties
         self.voltage = voltage
 
-        self.voltageAcrossReference = None
+        self.currentThroughReference = None
+        self.anodeVoltageReference = None
+        self.cathodeVoltageReference = None
 
-        self.anodeCurrent = None
-        self.cathodeCurrent = None
+        self.voltageAcrossReference = None
+        self.anodeCurrentReference = None
+        self.cathodeCurrentReference = None
 
         # Derivatives of the voltage source's voltage with respect to the anode and cathode voltages (always 1 or -1)
         self.anodeVoltageJacobianVoltageReference = None
@@ -71,11 +74,12 @@ class VoltageSource:
         """
 
         # Finds the _difference_ between the voltage across it and what the voltage across it should really be
-        self.voltageAcrossReference -= (self.voltage - (self.anodeVoltageReference - self.cathodeVoltageReference))
+        self.voltageAcrossReference -= (self.voltage
+                                        - (self.anodeVoltageReference.value - self.cathodeVoltageReference.value))
 
         # This is the current from the anode to the cathode - possibly not what you would expect
-        self.anodeCurrentReference += self.currentThroughReference
-        self.cathodeCurrentReference -= self.currentThroughReference
+        self.anodeCurrentReference += self.currentThroughReference.value
+        self.cathodeCurrentReference -= self.currentThroughReference.value
 
         self.anodeVoltageJacobianVoltageReference += 1
         self.cathodeVoltageJacobianVoltageReference -= 1

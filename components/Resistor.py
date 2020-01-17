@@ -74,8 +74,9 @@ class Resistor:
         """
 
         # +ve means current is flowing _out_ of that node into this component
-        self.frontCurrent += (self.frontVoltage - self.backVoltage) / self.resistance
-        self.backCurrent -= (self.frontVoltage - self.backVoltage) / self.resistance
+        current = (self.frontVoltage.value - self.backVoltage.value) / self.resistance
+        self.frontCurrent += current
+        self.backCurrent -= current
 
         self.frontConductanceByFrontVoltage += self.conductance
         self.frontConductanceByBackVoltage -= self.conductance
