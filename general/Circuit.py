@@ -25,6 +25,13 @@ class Circuit:
         self.inputVector = None
 
     def add(self, component, nodes):
+        """
+        Adds a component instance to the circuit, connected to the appropriate nodes.
+
+        :param component: An instance of Component to add.
+        :param nodes: A iterable of nodes which the component is connected to.
+        :return: None
+        """
         for n in nodes:
             if n not in self.node_mapping.keys():
                 self.node_mapping[n] = self.matrix_n
@@ -38,6 +45,12 @@ class Circuit:
         self.componentNodes.append((component, nodes))
 
     def finalise(self, groundNode: int):
+        """
+        Constructs the circuit using components that have been added.
+
+        :param groundNode: The node that is treated as the reference; all voltages are relative to this node.
+        :return: None
+        """
         # We remove rows and columns of ground...
         ground_entry = self.node_mapping[groundNode]
         for node in self.node_mapping.keys():
@@ -47,7 +60,7 @@ class Circuit:
         self.matrix_n -= 1
         self.jacobian = np.array([[MutableFloat() for _ in range(self.matrix_n)] for _ in range(self.matrix_n)])
         self.resultVector = np.array([MutableFloat() for _ in range(self.matrix_n)])
-        self.inputVector = np.array([MutableFloat(1) for _ in range(self.matrix_n)])
+        self.inputVector = np.array([MutableFloat(0) for _ in range(self.matrix_n)])
         self.groundNode = groundNode
         for component in self.componentNodes:
             component[0].connect(self, component[1])
@@ -93,3 +106,5 @@ class Circuit:
             if (abs(delta_in) < 1e-5).all():
                 self.environment.time += self.delta_t
                 return
+        else:
+            print("Failed to converge")
