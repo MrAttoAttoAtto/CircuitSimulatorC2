@@ -1,5 +1,5 @@
 import math
-from typing import List
+from typing import List, Tuple
 
 from components.Component import Component
 from general.Circuit import Circuit
@@ -10,8 +10,6 @@ class Diode:
     """
     A basic diode using the Schottky Diode Equation
     """
-
-    isVoltageBased = False
 
     def __init__(self, breakdownVoltage: float = 40, saturationCurrent: float = 1e-12, ideality: float = 1):
         """
@@ -44,6 +42,18 @@ class Diode:
         self.anodeConductanceByCathodeVoltage = None
         self.cathodeConductanceByAnodeVoltage = None
         self.cathodeConductanceByCathodeVoltage = None
+
+    # noinspection PyMethodMayBeStatic
+    def getRequiredCrossNodes(self, nodes: List[int], identifier: int) -> List[Tuple[int, int, int]]:
+        """
+        Returns an empty list as cross-node entries are not required for a diode
+
+        :param nodes: The nodes this diode is connected to (anode, cathode)
+        :param identifier: This diode's identifier
+        :return: An empty list
+        """
+
+        return []
 
     def connect(self, circuit: Circuit, nodes: List[int]):
         """

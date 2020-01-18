@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 from components.Component import Component
 from general.Circuit import Circuit
@@ -29,6 +29,18 @@ class Capacitor:
         self.frontConductanceByBackVoltage = None
         self.backConductanceByFrontVoltage = None
         self.backConductanceByBackVoltage = None
+
+    # noinspection PyMethodMayBeStatic
+    def getRequiredCrossNodes(self, nodes: List[int], identifier: int) -> List[Tuple[int, int, int]]:
+        """
+        Returns an empty list as cross-node entries are not required for a capacitor
+
+        :param nodes: The nodes this capacitor is connected to
+        :param identifier: This capacitor's identifier
+        :return: An empty list
+        """
+
+        return []
 
     def connect(self, circuit: Circuit, nodes: List[int]):
         frontNode, backNode = nodes

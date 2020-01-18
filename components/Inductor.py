@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 from components.Component import Component
 from general.Circuit import Circuit
@@ -10,8 +10,6 @@ class Inductor:
     A standard inductor
     """
 
-    isVoltageBased = True
-
     def __init__(self, inductance: float):
         """
         Creates an inductor, setting all the nodes to None before the inductor is connected
@@ -21,6 +19,8 @@ class Inductor:
 
         # Basic inductor properties
         self.inductance = inductance
+
+        self.identifier = None
 
         # Inputs: Current through inductor, voltage at front and back
         self.currentThroughReference = None
@@ -38,6 +38,22 @@ class Inductor:
         self.frontNodeJacobianCurrentReference = None
         self.backNodeJacobianCurrentReference = None
 
+    def getRequiredCrossNodes(self, nodes: List[int], identifier: int) -> List[Tuple[int, int, int]]:
+        """
+        Returns the (single) cross-node entry required: the one from front to back
+
+        :param nodes: The nodes this inductor is connected to (front, back)
+        :param identifier: This inductor's identifier
+        :return: The (single) cross-node entry required in a list: the one from front to back
+        """
+
+        self.identifier = identifier
+
+        frontNode, backNode = nodes
+        frontBackTuple = (frontNode, backNode, identifier)
+
+        return [frontBackTuple]
+
     def connect(self, circuit: Circuit, nodes: List[int]):
         """
         Connects the inductor to its specified nodes
@@ -49,7 +65,6 @@ class Inductor:
         """
 
         frontNode, backNode = nodes
-
         frontBackTuple = (frontNode, backNode)
 
         self.currentThroughReference = circuit.getInputReference(frontBackTuple)

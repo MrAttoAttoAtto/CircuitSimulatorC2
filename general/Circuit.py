@@ -30,10 +30,11 @@ class Circuit:
                 self.node_mapping[n] = self.matrix_n
                 self.matrix_n += 1
 
-        if component.isVoltageBased and self.node_mapping.get((nodes[0], nodes[1])) is None:
-            assert len(nodes) == 2
-            self.node_mapping[(nodes[0], nodes[1])] = self.matrix_n
-            self.matrix_n += 1
+        # Matrix_n will never be the same for 2 distinct components, so it works as an arbitrary unique identifier
+        for n in component.getRequiredCrossNodes(nodes, self.matrix_n):
+            if n not in self.node_mapping.keys():
+                self.node_mapping[n] = self.matrix_n
+                self.matrix_n += 1
 
         self.componentNodes.append((component, nodes))
 
@@ -54,14 +55,16 @@ class Circuit:
 
         self.components = [component[0] for component in self.componentNodes]
 
-    def getInputReference(self, node: Union[Tuple[int], int]) -> MutableFloat:
+    def getInputReference(self, node: Union[Tuple[int, int, int], int]) -> MutableFloat:
         return self.inputVector[self.node_mapping[node]] if node != self.groundNode else MutableFloat()
 
-    def getResultReference(self, node: Union[Tuple[int], int]) -> MutableFloat:
+    def getResultReference(self, node: Union[Tuple[int, int, int], int]) -> MutableFloat:
         return self.resultVector[self.node_mapping[node]] if node != self.groundNode else MutableFloat()
 
-    def getJacobianReference(self, nodeA: Union[Tuple[int], int], nodeB: Union[Tuple[int], int]) -> MutableFloat:
-        return self.jacobian[self.node_mapping[nodeA], self.node_mapping[nodeB]] if nodeA != self.groundNode and nodeB != self.groundNode else MutableFloat()
+    def getJacobianReference(self, nodeA: Union[Tuple[int, int, int], int],
+                             nodeB: Union[Tuple[int, int, int], int]) -> MutableFloat:
+        return self.jacobian[self.node_mapping[nodeA], self.node_mapping[nodeB]] \
+            if nodeA != self.groundNode and nodeB != self.groundNode else MutableFloat()
 
     def simulate_step(self):
         # TODO do better guessing!
