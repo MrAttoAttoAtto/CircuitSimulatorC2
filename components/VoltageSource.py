@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 from components.Component import Component
 from general.Circuit import Circuit
@@ -10,8 +10,6 @@ class VoltageSource:
     A standard DC voltage source
     """
 
-    isVoltageBased = True
-
     def __init__(self, voltage: float):
         """
         Creates a voltage source, setting all the nodes to None before the voltage source is connected
@@ -21,6 +19,8 @@ class VoltageSource:
 
         # Basic voltage source properties
         self.voltage = voltage
+
+        self.identifier = None
 
         self.currentThroughReference = None
         self.anodeVoltageReference = None
@@ -38,6 +38,22 @@ class VoltageSource:
         self.anodeNodeJacobianCurrentReference = None
         self.cathodeNodeJacobianCurrentReference = None
 
+    def getRequiredCrossNodes(self, nodes: List[int], identifier: int) -> List[Tuple[int, int, int]]:
+        """
+        Returns the (single) cross-node entry required: the one from anode to cathode
+
+        :param nodes: The nodes the voltage source will be connected to (anode, cathode)
+        :param identifier: The identifier this voltage source will have in order to refer to the correct cross-node
+        :return: The (single) cross-node entry required in a list: the one from anode to cathode
+        """
+
+        self.identifier = identifier
+
+        anode, cathode = nodes
+        anodeCathodeTuple = (anode, cathode, self.identifier)
+
+        return [anodeCathodeTuple]
+
     def connect(self, circuit: Circuit, nodes: List[int]):
         """
         Connects the voltage source to its specified nodes
@@ -49,8 +65,7 @@ class VoltageSource:
         """
 
         anode, cathode = nodes
-
-        anodeCathodeTuple = (anode, cathode)
+        anodeCathodeTuple = (anode, cathode, self.identifier)
 
         self.currentThroughReference = circuit.getInputReference(anodeCathodeTuple)
         self.anodeVoltageReference = circuit.getInputReference(anode)
