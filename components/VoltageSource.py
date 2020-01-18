@@ -80,11 +80,11 @@ class VoltageSource:
         self.anodeNodeJacobianCurrentReference = circuit.getJacobianReference(anode, anodeCathodeTuple)
         self.cathodeNodeJacobianCurrentReference = circuit.getJacobianReference(cathode, anodeCathodeTuple)
 
-    def stamp(self, environment: Environment):
+    def stamp_static(self, environment: Environment):
         """
-        Amends the values at its nodes to affect the circuit as the resistor would
+        Amends the values at its nodes to affect the circuit as the voltage source would, after infinite time.
 
-        :param environment: The environment of the circuit at the given moment (in this case, not important)
+        :param environment: The environment of the circuit when this voltage source is operating
         :return: None
         """
 
@@ -100,6 +100,9 @@ class VoltageSource:
         self.cathodeVoltageJacobianVoltageReference -= 1
         self.anodeNodeJacobianCurrentReference += 1
         self.cathodeNodeJacobianCurrentReference -= 1
+
+    def stamp_transient(self, environment: Environment, delta_t: int):
+        self.stamp_static(environment)
 
 
 Component.register(VoltageSource)

@@ -77,11 +77,11 @@ class Diode:
         self.cathodeConductanceByAnodeVoltage = circuit.getJacobianReference(cathodeNode, anodeNode)
         self.cathodeConductanceByCathodeVoltage = circuit.getJacobianReference(cathodeNode, cathodeNode)
 
-    def stamp(self, environment: Environment):
+    def stamp_static(self, environment: Environment):
         """
-        Amends the values at its nodes to affect the circuit as the diode would
+        Amends the values at its nodes to affect the circuit as the diode would, after infinite time.
 
-        :param environment: The environment of the circuit at the given moment
+        :param environment: The environment of the circuit when this diode is operating
         :return: None
         """
 
@@ -111,6 +111,9 @@ class Diode:
         self.anodeConductanceByCathodeVoltage -= conductance
         self.cathodeConductanceByAnodeVoltage -= conductance
         self.cathodeConductanceByCathodeVoltage += conductance
+
+    def stamp_transient(self, environment: Environment, delta_t: int):
+        self.stamp_static(environment)
 
 
 Component.register(Diode)

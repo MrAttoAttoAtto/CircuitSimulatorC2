@@ -1,5 +1,5 @@
 # Rough outline
-from typing import Union, Tuple
+from typing import Union, Tuple, Callable
 
 import numpy as np
 import scipy.linalg
@@ -8,12 +8,14 @@ from general.Environment import Environment
 from utils.MutableFloat import MutableFloat
 
 
+class ConvergenceFailure(Exception):
+    pass
+
+
 class Circuit:
-    def __init__(self, environment: Environment, delta_t: float):
+    def __init__(self, environment: Environment):
         self.matrix_n = 0
         self.node_mapping = {}
-        self.delta_t = delta_t
-        environment.delta_t = delta_t
         self.environment = environment
 
         self.componentNodes = []
@@ -79,24 +81,24 @@ class Circuit:
         return self.jacobian[self.node_mapping[nodeA], self.node_mapping[nodeB]] \
             if nodeA != self.groundNode and nodeB != self.groundNode else MutableFloat()
 
-    def simulate_step(self):
+    def solve(self, convergence_limit: int, stamp_f: Callable[['Component', Environment], None]):
         # TODO do better guessing!
+        extract_value = np.vectorize(lambda x: x.live, otypes=[np.float64])
         clear_vec_one = np.vectorize(lambda x: x.reset(1))
+        clear_vec = np.vectorize(lambda x: x.reset(0))
+        updateVec = np.vectorize(lambda x: x.update())
         clear_vec_one(self.inputVector)
 
         # Limit convergence
-        for _ in range(100000):
-            updateVec = np.vectorize(lambda x: x.update())
+        for _ in range(convergence_limit):
             updateVec(self.inputVector)
 
-            clear_vec = np.vectorize(lambda x: x.reset(0))
             clear_vec(self.resultVector)
             clear_vec(self.jacobian)
 
             for component in self.components:
-                component.stamp(self.environment)
+                stamp_f(component, self.environment)
 
-            extract_value = np.vectorize(lambda x: x.live, otypes=[np.float64])
             jac = extract_value(self.jacobian)
             resultVector = -extract_value(self.resultVector)
 
@@ -107,7 +109,6 @@ class Circuit:
 
             # If the better guess is indistinguishable from the prior guess, we probably have the right value...
             if (abs(delta_in) < 1e-5).all():
-                self.environment.time += self.delta_t
                 return
         else:
-            print("Failed to converge")
+            raise ConvergenceFailure("Failed to converge.")

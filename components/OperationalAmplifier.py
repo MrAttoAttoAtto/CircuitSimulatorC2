@@ -100,7 +100,14 @@ class OperationalAmplifier:
         self.invertingCurrentByNonInvertingVoltage = circuit.getJacobianReference(invertingInput, nonInvertingInput)
         self.invertingCurrentByInvertingVoltage = circuit.getJacobianReference(invertingInput, invertingInput)
 
-    def stamp(self, environment: Environment):
+    def stamp_transient(self, environment: Environment, delta_t: int):
+        """
+        Amends the values at its nodes to affect the circuit as the op-amp would, in the time interval specified.
+
+        :param environment: The environment of the circuit when this op-amp is operating
+        :param delta_t: The time that has passed
+        :return: None
+        """
         # Adjusts the non-inverting voltage to take into account the input offset
         adjustedNonInvertingVoltage = self.nonInvertingVoltage.value - self.inputOffsetVoltage
         adjustedOldNonInvertingVoltage = self.nonInvertingVoltage.old - self.inputOffsetVoltage
@@ -115,12 +122,12 @@ class OperationalAmplifier:
         if self.supplyLoVoltage > self.supplyHiVoltage:
             outVoltage = 0
 
-        elif abs(outVoltage - oldCoarseOutVoltage) > self.slewRate * environment.delta_t:
+        elif abs(outVoltage - oldCoarseOutVoltage) > self.slewRate * delta_t:
             # Slew rate restricts how fast this signal can increase
             if oldCoarseOutVoltage < outVoltage:
-                outVoltage = oldCoarseOutVoltage + self.slewRate * environment.delta_t
+                outVoltage = oldCoarseOutVoltage + self.slewRate * delta_t
             else:
-                outVoltage = oldCoarseOutVoltage - self.slewRate * environment.delta_t
+                outVoltage = oldCoarseOutVoltage - self.slewRate * delta_t
 
         elif outVoltage > self.supplyHiVoltage - self.saturationOffsetVoltage:
             # The output voltage would exceed the +ve supply voltage (accounting for saturation offset)

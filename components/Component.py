@@ -42,9 +42,19 @@ class Component(abc.ABC):
         """
 
     @abc.abstractmethod
-    def stamp(self, environment: Environment):
+    def stamp_transient(self, environment: Environment, delta_t: int):
         """
-        Amends the values at its nodes to affect the circuit as the component would
+        Amends the values at its nodes to affect the circuit as the component would, in the time interval specified.
+
+        :param environment: The environment of the circuit when this component is operating
+        :param delta_t: The time that has passed
+        :return: None
+        """
+
+    @abc.abstractmethod
+    def stamp_static(self, environment: Environment):
+        """
+        Amends the values at its nodes to affect the circuit as the component would, after infinite time.
 
         :param environment: The environment of the circuit when this component is operating
         :return: None

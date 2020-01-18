@@ -80,16 +80,17 @@ class Inductor:
         self.frontNodeJacobianCurrentReference = circuit.getJacobianReference(frontNode, frontBackTuple)
         self.backNodeJacobianCurrentReference = circuit.getJacobianReference(backNode, frontBackTuple)
 
-    def stamp(self, environment: Environment):
+    def stamp_transient(self, environment: Environment, delta_t: int):
         """
-        Amends the values at its nodes to affect the circuit as the inductor would
+        Amends the values at its nodes to affect the circuit as the inductor would, in the time interval specified.
 
-        :param environment: The environment of the circuit at the given moment (in this case, not important)
+        :param environment: The environment of the circuit when this inductor is operating
+        :param delta_t: The time that has passed
         :return: None
         """
 
         # "Instantaneous" rate of change of current
-        dI_dt = (self.currentThroughReference.value - self.currentThroughReference.old) / environment.delta_t
+        dI_dt = (self.currentThroughReference.value - self.currentThroughReference.old) / delta_t
 
         # Finds the _difference_ between the voltage across it and what the voltage across it should really be
         # When 0, that's good!

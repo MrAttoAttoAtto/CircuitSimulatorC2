@@ -77,11 +77,11 @@ class Resistor:
         self.backConductanceByFrontVoltage = circuit.getJacobianReference(backNode, frontNode)
         self.backConductanceByBackVoltage = circuit.getJacobianReference(backNode, backNode)
 
-    def stamp(self, environment: Environment):
+    def stamp_static(self, environment: Environment):
         """
-        Amends the values at its nodes to affect the circuit as the resistor would
+        Amends the values at its nodes to affect the circuit as the resistor would, after infinite time.
 
-        :param environment: The environment of the circuit at the given moment (in this case, not important)
+        :param environment: The environment of the circuit when this resistor is operating
         :return: None
         """
 
@@ -94,6 +94,9 @@ class Resistor:
         self.frontConductanceByBackVoltage -= self.conductance
         self.backConductanceByFrontVoltage -= self.conductance
         self.backConductanceByBackVoltage += self.conductance
+
+    def stamp_transient(self, environment: Environment, delta_t: int):
+        self.stamp_static(environment)
 
 
 Component.register(Resistor)

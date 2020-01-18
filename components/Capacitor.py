@@ -55,8 +55,15 @@ class Capacitor:
         self.backConductanceByFrontVoltage = circuit.getJacobianReference(backNode, frontNode)
         self.backConductanceByBackVoltage = circuit.getJacobianReference(backNode, backNode)
 
-    def stamp(self, environment: Environment):
-        derivative_scale = self.capacitance / environment.delta_t
+    def stamp_transient(self, environment: Environment, delta_t: int):
+        """
+        Amends the values at its nodes to affect the circuit as the capacitor would, in the time interval specified.
+
+        :param environment: The environment of the circuit when this capacitor is operating
+        :param delta_t: The time that has passed
+        :return: None
+        """
+        derivative_scale = self.capacitance / delta_t
         delta_v = (self.frontVoltage.value - self.backVoltage.value) - (self.frontVoltage.old - self.backVoltage.old)
 
         self.frontCurrent += delta_v * derivative_scale
