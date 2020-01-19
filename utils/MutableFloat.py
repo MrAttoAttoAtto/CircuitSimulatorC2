@@ -38,5 +38,11 @@ class MutableFloat:
         self.live -= other
         return self
 
+    def __gt__(self, other):
+        return self.value > other
+
+    def __lt__(self, other):
+        return self.value < other
+
     def __repr__(self):
         return f"{self.live}"
