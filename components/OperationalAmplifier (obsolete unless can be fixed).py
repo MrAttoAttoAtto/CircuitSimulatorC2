@@ -4,6 +4,7 @@ from components.Component import Component
 from general.Circuit import Circuit
 from general.Environment import Environment
 
+gmin = 1e-12
 
 class OperationalAmplifier:
     """
@@ -21,6 +22,11 @@ class OperationalAmplifier:
         self.saturationOffsetVoltage = saturationOffsetVoltage
         self.gainBandwidthProduct = gainBandwidthProduct
         self.inputOffsetVoltage = inputOffsetVoltage
+
+        # FIXME
+        self.oldTime = 0
+        self.oldCoarseOutVoltage = 0
+        self.lastCoarseOutVoltage = 0
 
         self.identifier = None
 
@@ -108,13 +114,15 @@ class OperationalAmplifier:
         :param delta_t: The time that has passed
         :return: None
         """
+        if environment.time != self.oldTime:
+            self.oldCoarseOutVoltage = self.lastCoarseOutVoltage
+            self.oldTime = environment.time
+
         # Adjusts the non-inverting voltage to take into account the input offset
         adjustedNonInvertingVoltage = self.nonInvertingVoltage.value - self.inputOffsetVoltage
-        adjustedOldNonInvertingVoltage = self.nonInvertingVoltage.old - self.inputOffsetVoltage
 
         # The gain of the amplifier amplifies the difference of the two inputs
         outVoltage = (adjustedNonInvertingVoltage - self.invertingVoltage.value) * self.openLoopGain
-        oldCoarseOutVoltage = (adjustedOldNonInvertingVoltage - self.invertingVoltage.old) * self.openLoopGain
 
         # if the op-amp is working without being bounded, and thus the derivatives are normal
         normalDerivatives = False
@@ -122,12 +130,12 @@ class OperationalAmplifier:
         if self.supplyLoVoltage > self.supplyHiVoltage:
             outVoltage = 0
 
-        elif abs(outVoltage - oldCoarseOutVoltage) > self.slewRate * delta_t:
+        elif abs(outVoltage - self.oldCoarseOutVoltage) > self.slewRate * delta_t:
             # Slew rate restricts how fast this signal can increase
-            if oldCoarseOutVoltage < outVoltage:
-                outVoltage = oldCoarseOutVoltage + self.slewRate * delta_t
+            if self.oldCoarseOutVoltage < outVoltage:
+                outVoltage = self.oldCoarseOutVoltage + self.slewRate * delta_t
             else:
-                outVoltage = oldCoarseOutVoltage - self.slewRate * delta_t
+                outVoltage = self.oldCoarseOutVoltage - self.slewRate * delta_t
 
         elif outVoltage > self.supplyHiVoltage - self.saturationOffsetVoltage:
             # The output voltage would exceed the +ve supply voltage (accounting for saturation offset)
@@ -151,6 +159,8 @@ class OperationalAmplifier:
         else:
             normalDerivatives = True
 
+        self.lastCoarseOutVoltage = outVoltage
+
         # By V=IR, this is the effect of the output impedance on the voltage of the output
         outVoltage -= self.currentThroughOutput.value * self.outputImpedance
         self.voltageAcrossOutput -= (outVoltage - self.outputVoltage.value)
@@ -159,6 +169,10 @@ class OperationalAmplifier:
             self.outputVoltageByNonInvertingVoltage -= self.openLoopGain
             self.outputVoltageByInvertingVoltage += self.openLoopGain
             self.outputVoltageByCurrentThrough += self.outputImpedance
+        else:
+            self.outputVoltageByNonInvertingVoltage -= gmin
+            self.outputVoltageByInvertingVoltage += gmin
+            self.outputVoltageByCurrentThrough += gmin
         # Otherwise, the derivatives are all 0 (except for outputVoltageByOutputVoltage), as changing the variables
         # would not (directly arithmetically) change the output voltage
         self.outputVoltageByOutputVoltage += 1
