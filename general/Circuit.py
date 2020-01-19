@@ -62,8 +62,8 @@ class Circuit:
                 self.node_mapping[node] -= 1
         self.matrix_n -= 1
         self.jacobian = np.array([[MutableFloat() for _ in range(self.matrix_n)] for _ in range(self.matrix_n)])
-        self.resultVector = np.array([MutableFloat() for _ in range(self.matrix_n)])
-        self.inputVector = np.array([MutableFloat(0) for _ in range(self.matrix_n)])
+        self.resultVector = [MutableFloat() for _ in range(self.matrix_n)]
+        self.inputVector = [MutableFloat(0) for _ in range(self.matrix_n)]
         self.groundNode = groundNode
         for component in self.componentNodes:
             component[0].connect(self, component[1])
@@ -81,26 +81,32 @@ class Circuit:
         return self.jacobian[self.node_mapping[nodeA], self.node_mapping[nodeB]] \
             if nodeA != self.groundNode and nodeB != self.groundNode else MutableFloat()
 
+
     def solve(self, convergence_limit: int, stamp_f: Callable[['Component', Environment], None]):
         # TODO do better guessing!
-        extract_value = np.vectorize(lambda x: x.live, otypes=[np.float64])
-        clear_vec_one = np.vectorize(lambda x: x.reset(1))
-        clear_vec = np.vectorize(lambda x: x.reset(0))
-        updateVec = np.vectorize(lambda x: x.update())
-        clear_vec_one(self.inputVector)
+        extract_value = np.vectorize(lambda x: x.value, otypes=[np.float64])
+
+        # Set starting inputs to 1
+        for x in self.inputVector:
+            x.reset(1)
 
         # Limit convergence
         for _ in range(convergence_limit):
-            updateVec(self.inputVector)
 
-            clear_vec(self.resultVector)
-            clear_vec(self.jacobian)
+            # Clear result vector
+            for x in self.resultVector:
+                x.reset(0.0)
 
+            # Clear jacobian (old not necessary?)
+            for x in np.nditer(self.jacobian, flags=['refs_ok']):
+                x.item().reset_without_old(0.0)
+
+            # Stamp each component's contributions
             for component in self.components:
                 stamp_f(component, self.environment)
 
             jac = extract_value(self.jacobian)
-            resultVector = -extract_value(self.resultVector)
+            resultVector = [-x.value for x in self.resultVector]
 
             # Solve matrices
             delta_in = scipy.linalg.lapack.dgesv(jac+1e-12, resultVector)[2]
