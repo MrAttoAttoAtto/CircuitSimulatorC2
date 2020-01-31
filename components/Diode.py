@@ -57,7 +57,7 @@ class Diode:
 
     def connect(self, circuit: Circuit, nodes: List[int]):
         """
-        Connects the resistor to its specified nodes
+        Connects the diode to its specified nodes
 
         Sets the matrix/vector reference objects as defined above
         :param circuit: The circuit
