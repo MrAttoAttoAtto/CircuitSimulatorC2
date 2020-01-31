@@ -88,7 +88,7 @@ class Circuit:
 
         # Set starting inputs to 1
         for x in self.inputVector:
-            x.reset(1)
+            x.reset(x.value)
 
         # Limit convergence
         for _ in range(convergence_limit):

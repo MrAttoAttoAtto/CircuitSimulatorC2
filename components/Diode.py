@@ -107,6 +107,7 @@ class Diode:
         self.anodeCurrent += current
         self.cathodeCurrent -= current
 
+        conductance += environment.gMin
         self.anodeConductanceByAnodeVoltage += conductance
         self.anodeConductanceByCathodeVoltage -= conductance
         self.cathodeConductanceByAnodeVoltage -= conductance
