@@ -92,8 +92,9 @@ class CircuitItem(QGraphicsItem):
 
 class CircuitSymbol(CircuitItem):
 
-    def __init__(self, x=0, y=0):
+    def __init__(self, x=0, y=0, logical=None):
         super().__init__()
+        self.logical = logical
         self.nodes = self.createNodes()
         self.decor = self.createDecor()
 
@@ -294,34 +295,7 @@ class CircuitScene(QGraphicsScene):
             self._wire_spawn = None
             self._wire_spawn_source = None
 
-
-class MyWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-
-    def initUI(self):
-        self.mscene = CircuitScene()
-        self.mscene.addText("Hello")
-        self.mnoot = CircuitNode()
-        self.mnoot2 = CircuitNode(50, 0)
-        self.mscene.addItem(self.mnoot)
-        self.mscene.addItem(self.mnoot2)
-
-        self.mres = GraphicalResistor(20, 100)
-        self.mscene.addItem(self.mres)
-
-        self.mview = CircuitView(self.mscene)
-        self.setCentralWidget(self.mview)
-        self.statusBar().showMessage('Ready')
-        self.resize(1920, 1080)
-        self.activateWindow()
-        self.setWindowTitle('Statusbar')
-        self.show()
-        self.mview.zoomToFit()
-
-
-if __name__ == '__main__':
-    app = QApplication([])
-    wind = MyWindow()
-    exit(app.exec_())
+    def addComponent(self, x, y, logical):
+        visual_component = logical.DISPLAY(x, y, logical)
+        self.addItem(visual_component)
+        logical.graphic = visual_component

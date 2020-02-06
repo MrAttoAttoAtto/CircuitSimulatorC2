@@ -14,6 +14,7 @@ class Resistor:
     ATTRIBUTES = {'resistance': float}
     DEFAULT_ATTRIBUTES = {'resistance': 1.0}
 
-    def __init__(self, graphicalComponent):
+    def __init__(self):
         self.attributes = Resistor.DEFAULT_ATTRIBUTES.copy()
-        self.graphical = graphicalComponent
+        self.graphic = None
+
