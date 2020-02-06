@@ -29,6 +29,7 @@ class CircuitNode(QGraphicsRectItem):
         self.setAcceptHoverEvents(True)
         self.setPos(x, y)
         self._wire_spawn = None
+        self.actual_node = -1
         self.connected = set()
 
     def connect(self, target):
@@ -74,7 +75,6 @@ class CircuitItem(QGraphicsItem):
 
     def itemChange(self, change, value):
         if (change == QGraphicsItem.ItemSelectedChange):
-            print("selectionchange")
             if value == True:
                 pen = selectedPen
             else:
@@ -111,7 +111,6 @@ class CircuitSymbol(CircuitItem):
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionHasChanged:
-            print("n")
             for n in self.nodes:
                 n.disconnect_all()
         return super().itemChange(change, value)
@@ -135,6 +134,17 @@ class GraphicalResistor(CircuitSymbol):
     def boundingRect(self):
         return QRectF(0, 0, 20, 100)
 
+
+class GraphicalGround(CircuitSymbol):
+    def createNodes(self):
+        return [CircuitNode(10, 0)]
+    def createDecor(self):
+        return [QGraphicsLineItem(10, 0, 10, 20),
+                QGraphicsLineItem(-10, 20, 30, 20),
+                QGraphicsLineItem(-3, 25, 23, 25),
+                QGraphicsLineItem(4, 30, 16, 30)]
+    def boundingRect(self):
+        return QRectF(-10, 0, 30, 30)
 
 class UberPath(QGraphicsPathItem):
     def __init__(self):
@@ -275,7 +285,6 @@ class CircuitScene(QGraphicsScene):
             self._wire_spawn = None
             self._wire_spawn_source = None
 
-
     def startWireCreation(self, source):
         self._wire_spawn = UberPath()
         self.addItem(self._wire_spawn)
@@ -299,3 +308,4 @@ class CircuitScene(QGraphicsScene):
         visual_component = logical.DISPLAY(x, y, logical)
         self.addItem(visual_component)
         logical.graphic = visual_component
+
