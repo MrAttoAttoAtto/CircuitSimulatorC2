@@ -2,13 +2,14 @@
 """
 Created on Tue Dec 17 14:30:00 2019
 
-@author: Joseph
+@author: Joseph, and ya boi
 """
 from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtGui import QColor, QPen, QPainterPath, QPainterPathStroker
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QGraphicsView,
-                             QGraphicsLineItem, QGraphicsItem, QGraphicsScene,
-                             QGraphicsRectItem, QGraphicsPathItem)
+from PyQt5.QtWidgets import (QGraphicsView,
+                             QGraphicsLineItem, QGraphicsItem, QGraphicsScene, QMessageBox,
+                             QGraphicsRectItem, QGraphicsPathItem, QDialog, QLabel,
+                             QLineEdit, QGridLayout, QDialogButtonBox, QGraphicsEllipseItem)
 
 defaultPen = QPen(Qt.black, 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
 selectedPen = QPen(Qt.blue, 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
@@ -109,6 +110,49 @@ class CircuitSymbol(CircuitItem):
         self.setPos(x, y)
         self.setAcceptHoverEvents(True)
 
+    def mouseDoubleClickEvent(self, QGraphicsSceneMouseEvent):
+        dialog = QDialog()
+        dialog.setWindowTitle(f"{self.logical.NAME} Configuration")
+
+        gridLayout = QGridLayout()
+        attributeMap = {}
+        for i, (name, (typ, displayName)) in enumerate(self.logical.ATTRIBUTES.items()):
+            label = QLabel(f"{displayName}:")
+            entry = QLineEdit(f"{self.logical.attributes[name]}")
+
+            attributeMap[name] = entry
+
+            gridLayout.addWidget(label, i, 0)
+            gridLayout.addWidget(entry, i, 1)
+
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        def recordValues():
+            middlemanMap = {}
+            for name, entry in attributeMap.items():
+                try:
+                    middlemanMap[name] = self.logical.ATTRIBUTES[name][0](entry.text())
+                except ValueError:
+                    messageBox = QMessageBox()
+                    messageBox.setText(f"An invalid parameter was specified for {self.logical.ATTRIBUTES[name][1]}")
+                    messageBox.setWindowTitle("Invalid parameter")
+                    messageBox.setIcon(QMessageBox.Warning)
+
+                    messageBox.exec()
+                    return
+
+
+            self.logical.attributes = middlemanMap
+            dialog.close()
+
+        buttonBox.accepted.connect(recordValues)
+        buttonBox.rejected.connect(dialog.close)
+
+        gridLayout.addWidget(buttonBox, i+1, 1)
+        dialog.setLayout(gridLayout)
+
+        dialog.exec()
+
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionHasChanged:
             print("n")
@@ -134,6 +178,18 @@ class GraphicalResistor(CircuitSymbol):
 
     def boundingRect(self):
         return QRectF(0, 0, 20, 100)
+
+class GraphicalVoltageSource(CircuitSymbol):
+    def createNodes(self):
+        return [CircuitNode(10, 0), CircuitNode(10, 70)]
+
+    def createDecor(self):
+        return [QGraphicsEllipseItem(-5, 20, 30, 30),
+                QGraphicsLineItem(10, 0, 10, 20),
+                QGraphicsLineItem(10, 50, 10, 70)]
+
+    def boundingRect(self):
+        return QRectF(0, 0, 20, 70)
 
 
 class UberPath(QGraphicsPathItem):

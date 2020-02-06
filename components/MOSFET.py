@@ -11,8 +11,8 @@ class MOSFET:
     A normal MOSFET
     """
 
-    def __init__(self, thresholdVoltage: float = 3, width: float = 1e-6, length: float = 1e-7,
-                 specificCapacitance: float = 1e-3, electronMobility: float = 500e-4):
+    def __init__(self, thresholdVoltage: float = 3, width: float = 1e-6, length: float = 1e-9,
+                 specificCapacitance: float = 1e-2, electronMobility: float = 500e-4):
         """
         Initialises the MOSFET with its given characteristics
 
