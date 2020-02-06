@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction
 
-from ui.logical import COMPONENTS, ReferenceNode
-from ui.visuals import CircuitScene, CircuitNode, CircuitView, GraphicalResistor
+from ui.logical import COMPONENTS, ReferenceNode, VoltageSource
+from ui.visuals import CircuitScene, CircuitNode, CircuitView, GraphicalResistor, GraphicalVoltageSource
 
 
 class MainWindow(QMainWindow):
@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         self.mscene.addItem(self.mnoot)
         self.mscene.addItem(self.mnoot2)
 
-        self.mres = GraphicalResistor(20, 100)
+        self.mres = GraphicalVoltageSource(20, 100, VoltageSource())
         self.mscene.addItem(self.mres)
 
         self.mview = CircuitView(self.mscene)

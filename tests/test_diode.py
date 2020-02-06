@@ -75,8 +75,6 @@ def test_diode_breakdown():
     sim = StaticSimulation(circuit, 10000)
     sim.simulate()
 
-    print(circuitCurrent.value)
-
     # Remember 0.638 and -0.0936?
     assert isclose(diodeVoltage.value, 40.638)
     assert isclose(circuitCurrent.value, -0.0936)

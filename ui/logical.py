@@ -1,5 +1,4 @@
-from ui.visuals import GraphicalResistor, GraphicalGround
-
+from ui.visuals import GraphicalResistor, GraphicalGround, GraphicalVoltageSource
 
 class CircuitBuilder:
     def __init__(self):
@@ -23,14 +22,24 @@ class ReferenceNode:
 class Resistor:
     NAME = "Resistor"
     DISPLAY = GraphicalResistor
-    ATTRIBUTES = {'resistance': float}
+    # Type then display name
+    ATTRIBUTES = {'resistance': [float, "Resistance"]}
     DEFAULT_ATTRIBUTES = {'resistance': 1.0}
 
     def __init__(self):
         self.attributes = Resistor.DEFAULT_ATTRIBUTES.copy()
         self.graphic = None
 
+class VoltageSource:
+    NAME = "Voltage Source"
+    DISPLAY = GraphicalVoltageSource
+    # Type then display name
+    ATTRIBUTES = {'voltage': [float, "Voltage"]}
+    DEFAULT_ATTRIBUTES = {'voltage': 9.0}
 
+    def __init__(self):
+        self.attributes = VoltageSource.DEFAULT_ATTRIBUTES.copy()
+        self.graphic = None
 
-COMPONENTS = [Resistor, ReferenceNode]
+COMPONENTS = [Resistor, ReferenceNode, VoltageSource]
 
