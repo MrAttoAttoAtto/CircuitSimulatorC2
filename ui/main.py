@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction
 
-from ui.logical import COMPONENTS, ReferenceNode, VoltageSource
-from ui.visuals import CircuitScene, CircuitNode, CircuitView, GraphicalResistor, GraphicalVoltageSource
+from ui.logical import COMPONENTS, ReferenceNode
+from ui.logical import Diode
+from ui.visuals import CircuitScene, CircuitNode, CircuitView, GraphicalDiode
 
 
 class MainWindow(QMainWindow):
@@ -19,7 +20,7 @@ class MainWindow(QMainWindow):
         self.mscene.addItem(self.mnoot)
         self.mscene.addItem(self.mnoot2)
 
-        self.mres = GraphicalVoltageSource(20, 100, VoltageSource())
+        self.mres = GraphicalDiode(20, 100, Diode())
         self.mscene.addItem(self.mres)
 
         self.mview = CircuitView(self.mscene)
@@ -28,7 +29,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage('Ready')
         self.resize(1920, 1080)
         self.activateWindow()
-        self.setWindowTitle('Statusbar')
+        self.setWindowTitle('Circuit Simulator')
         self.show()
         self.mview.zoomToFit()
 

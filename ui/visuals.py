@@ -5,10 +5,10 @@ Created on Tue Dec 17 14:30:00 2019
 @author: Joseph, and ya boi
 """
 from PyQt5.QtCore import Qt, QRectF, QPointF
-from PyQt5.QtGui import QColor, QPen, QPainterPath, QPainterPathStroker
+from PyQt5.QtGui import QColor, QPen, QPainterPath, QPainterPathStroker, QPolygonF
 from PyQt5.QtWidgets import (QGraphicsView,
                              QGraphicsLineItem, QGraphicsItem, QGraphicsScene, QMessageBox,
-                             QGraphicsRectItem, QGraphicsPathItem, QDialog, QLabel,
+                             QGraphicsRectItem, QGraphicsPathItem, QDialog, QLabel, QGraphicsPolygonItem,
                              QLineEdit, QGridLayout, QDialogButtonBox, QGraphicsEllipseItem)
 
 defaultPen = QPen(Qt.black, 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
@@ -116,14 +116,18 @@ class CircuitSymbol(CircuitItem):
 
         gridLayout = QGridLayout()
         attributeMap = {}
-        for i, (name, (typ, displayName)) in enumerate(self.logical.ATTRIBUTES.items()):
+        for i, (name, (typ, displayName, unit, unitTooltip)) in enumerate(self.logical.ATTRIBUTES.items()):
             label = QLabel(f"{displayName}:")
             entry = QLineEdit(f"{self.logical.attributes[name]}")
+            unitLabel = QLabel(unit)
+            unitLabel.setCursor(Qt.WhatsThisCursor)
+            unitLabel.setToolTip(unitTooltip)
 
             attributeMap[name] = entry
 
             gridLayout.addWidget(label, i, 0)
             gridLayout.addWidget(entry, i, 1)
+            gridLayout.addWidget(unitLabel, i, 2)
 
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
@@ -132,15 +136,16 @@ class CircuitSymbol(CircuitItem):
             for name, entry in attributeMap.items():
                 try:
                     middlemanMap[name] = self.logical.ATTRIBUTES[name][0](entry.text())
-                except ValueError:
+                except ValueError as e:
                     messageBox = QMessageBox()
                     messageBox.setText(f"An invalid parameter was specified for {self.logical.ATTRIBUTES[name][1]}")
+                    messageBox.setInformativeText("Please enter another value")
+                    messageBox.setDetailedText(f"{type(e).__name__}: {str(e)}")
                     messageBox.setWindowTitle("Invalid parameter")
                     messageBox.setIcon(QMessageBox.Warning)
 
                     messageBox.exec()
                     return
-
 
             self.logical.attributes = middlemanMap
             dialog.close()
@@ -189,6 +194,20 @@ class GraphicalVoltageSource(CircuitSymbol):
 
     def boundingRect(self):
         return QRectF(0, 0, 20, 70)
+
+class GraphicalDiode(CircuitSymbol):
+    def createNodes(self):
+        return [CircuitNode(10, 0), CircuitNode(10, 40)]
+
+    def createDecor(self):
+        triangle = QPolygonF([QPointF(0, 10+17.32), QPointF(20, 10+17.32), QPointF(10, 10)])
+        return [QGraphicsLineItem(10, 0, 10, 10),
+                QGraphicsLineItem(10, 10+17.32, 10, 40),
+                QGraphicsPolygonItem(triangle),
+                QGraphicsLineItem(0, 10, 20, 10)]
+
+    def boundingRect(self):
+        return QRectF(0, 0, 20, 40)
 
 
 class GraphicalGround(CircuitSymbol):
