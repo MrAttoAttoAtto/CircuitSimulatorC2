@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction
 
-from ui.logical import COMPONENTS, ReferenceNode
-from ui.logical import Diode
-from ui.visuals import CircuitScene, CircuitNode, CircuitView, GraphicalDiode
+from ui.CircuitScene import CircuitScene
+from ui.GraphicalComponents import GraphicalDiode, GraphicalGround, COMPONENTS
+from ui.visuals import CircuitNode, CircuitView
 
 
 class MainWindow(QMainWindow):
@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
         self.mscene.addItem(self.mnoot)
         self.mscene.addItem(self.mnoot2)
 
-        self.mres = GraphicalDiode(20, 100, Diode())
+        self.mres = GraphicalDiode(20, 100)
         self.mscene.addItem(self.mres)
 
         self.mview = CircuitView(self.mscene)
@@ -35,23 +35,29 @@ class MainWindow(QMainWindow):
 
     def run(self):
         print(self.components)
-        gnd_components = list(filter(lambda x: x is ReferenceNode, self.components))
+        gnd_components = list(filter(lambda x: isinstance(x, GraphicalGround), self.components))
         if len(gnd_components) > 0:
             for gnd in gnd_components:
-                gnd.graphic.nodes[0].actual_node = 0
+                gnd.nodes[0].actual_node = 0
         else:
-            self.statusBar().showMessage("need ground node.")
-    def addComponent(self, component_class):
-        c = component_class()
-        self.mscene.addComponent(0, 0, c)
-        self.components.append(c)
+            self.statusBar().showMessage("Ground node required.")
+
+    def addComponentFactory(self, component_class):
+        def addComponent():
+            c = component_class(0, 0)
+            self.mscene.addItem(c)
+            self.components.append(c)
+
+        return addComponent
 
     def createActions(self):
         toolbar = self.addToolBar("Components")
+
         for c in COMPONENTS:
             action = QAction(c.NAME, toolbar)
-            action.triggered.connect(lambda: self.addComponent(c))
+            action.triggered.connect(self.addComponentFactory(c))
             toolbar.addAction(action)
+
         toolbar.addSeparator()
         runAction = QAction("Run", toolbar)
         runAction.triggered.connect(self.run)
