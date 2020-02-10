@@ -1,27 +1,17 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction
 
 from ui.CircuitScene import CircuitScene
-from ui.GraphicalComponents import GraphicalDiode, GraphicalGround, COMPONENTS
+from ui.GraphicalComponents import GraphicalDiode, GraphicalGround, COMPONENTS, CircuitSymbol
 from ui.visuals import CircuitNode, CircuitView
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.components = []
         self.initUI()
 
     def initUI(self):
         self.mscene = CircuitScene()
-
-        self.mscene.addText("Hello")
-        self.mnoot = CircuitNode()
-        self.mnoot2 = CircuitNode(50, 0)
-        self.mscene.addItem(self.mnoot)
-        self.mscene.addItem(self.mnoot2)
-
-        self.mres = GraphicalDiode(20, 100)
-        self.mscene.addItem(self.mres)
 
         self.mview = CircuitView(self.mscene)
         self.setCentralWidget(self.mview)
@@ -34,8 +24,9 @@ class MainWindow(QMainWindow):
         self.mview.zoomToFit()
 
     def run(self):
-        print(self.components)
-        gnd_components = list(filter(lambda x: isinstance(x, GraphicalGround), self.components))
+        components = list(filter(lambda item: isinstance(item, CircuitSymbol), self.mscene.items()))
+        print(components)
+        gnd_components = list(filter(lambda x: isinstance(x, GraphicalGround), components))
         if len(gnd_components) > 0:
             for gnd in gnd_components:
                 gnd.nodes[0].actual_node = 0
@@ -46,7 +37,6 @@ class MainWindow(QMainWindow):
         def addComponent():
             c = component_class(0, 0)
             self.mscene.addItem(c)
-            self.components.append(c)
 
         return addComponent
 

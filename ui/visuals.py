@@ -25,29 +25,35 @@ class CircuitNode(QGraphicsRectItem):
     def connect(self, target):
         self.connected.add(target)
         target.connected.add(self)
-        p = QPen(defaultPen)
-        p.setColor(QColor(0, 255, 0, 0))
-        self.setPen(p)
-        target.setPen(p)
+        self.updateHoverState(self.isUnderMouse())
+        target.updateHoverState(self.isUnderMouse())
 
     def disconnect(self, target):
         self.connected.remove(target)
         target.connected.remove(self)
+        self.updateHoverState(self.isUnderMouse())
+        target.updateHoverState(self.isUnderMouse())
 
     def disconnect_all(self):
         for n in self.connected.copy():
             self.disconnect(n)
 
+    def updateHoverState(self, hovered:bool):
+        p = QPen(defaultPen)
+        if hovered:
+            # Red
+            p.setColor(QColor(255, 0, 0))
+        elif self.connected:
+            p.setColor(QColor(0, 0, 0, 0))
+        else:
+            p.setColor(QColor(0, 255, 0))
+        self.setPen(p)
 
     def hoverEnterEvent(self, event):
-        p = QPen(defaultPen)
-        p.setColor(QColor(255, 0, 0))
-        self.setPen(p)
+        self.updateHoverState(True)
 
     def hoverLeaveEvent(self, event):
-        p = QPen(defaultPen)
-        p.setColor(QColor(0, 255, 0, 0 if len(self.connected) else 255))
-        self.setPen(p)
+        self.updateHoverState(False)
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
@@ -62,6 +68,7 @@ class CircuitItem(QGraphicsItem):
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
+        self.setFlag(QGraphicsItem.ItemIsFocusable, True)
 
     def itemChange(self, change, value):
         if (change == QGraphicsItem.ItemSelectedChange):

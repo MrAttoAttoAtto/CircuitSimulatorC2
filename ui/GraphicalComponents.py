@@ -24,11 +24,21 @@ class CircuitSymbol(CircuitItem):
         for c in self.decor:
             c.setParentItem(self)
             pen = QPen(defaultPen)
-            pen.setColor(Qt.red)
             c.setPen(pen)
 
         self.setPos(x, y)
         self.setAcceptHoverEvents(True)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete or event.key() == Qt.Key_Backspace:
+            # Delete the component
+            for n in self.nodes:
+                n.disconnect_all()
+            self.scene().removeItem(self)
+            event.accept()
+        else:
+            event.ignore()
+
 
     def mouseDoubleClickEvent(self, QGraphicsSceneMouseEvent):
         dialog = QDialog()
