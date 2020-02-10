@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction
 
 from ui.CircuitScene import CircuitScene
-from ui.GraphicalComponents import GraphicalDiode, GraphicalGround, COMPONENTS, CircuitSymbol
-from ui.visuals import CircuitNode, CircuitView
+from ui.GraphicalComponents import GraphicalGround, COMPONENTS, CircuitSymbol
+from ui.visuals import CircuitView
 
 
 class MainWindow(QMainWindow):
@@ -25,7 +25,6 @@ class MainWindow(QMainWindow):
 
     def run(self):
         components = list(filter(lambda item: isinstance(item, CircuitSymbol), self.mscene.items()))
-        print(components)
         gnd_components = list(filter(lambda x: isinstance(x, GraphicalGround), components))
         if len(gnd_components) > 0:
             for gnd in gnd_components:
