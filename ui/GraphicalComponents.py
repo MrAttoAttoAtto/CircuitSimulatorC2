@@ -161,6 +161,9 @@ class GraphicalVoltageSource(CircuitSymbol):
 
     def createDecor(self):
         return [QGraphicsEllipseItem(-5, 20, 30, 30),
+                QGraphicsLineItem(10, 25, 10, 30),
+                QGraphicsLineItem(7.5, 27.5, 12.5, 27.5),
+                QGraphicsLineItem(7.5, 42.5, 12.5, 42.5),
                 QGraphicsLineItem(10, 0, 10, 20),
                 QGraphicsLineItem(10, 50, 10, 70)]
 
