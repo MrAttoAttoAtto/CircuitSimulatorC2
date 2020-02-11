@@ -3,12 +3,15 @@ from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QDialogButtonBox, QMessageBox, QGraphicsItem, \
     QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem
 
+from components.Diode import Diode
+from components.Resistor import Resistor
+from components.VoltageSource import VoltageSource
+from general.Circuit import Circuit
 from ui.utils import defaultPen
 from ui.visuals import CircuitItem, CircuitNode
 
 
 class CircuitSymbol(CircuitItem):
-
     NAME = ""
     ATTRIBUTES = {}
     DEFAULT_ATTRIBUTES = {}
@@ -38,7 +41,6 @@ class CircuitSymbol(CircuitItem):
             event.accept()
         else:
             event.ignore()
-
 
     def mouseDoubleClickEvent(self, QGraphicsSceneMouseEvent):
         dialog = QDialog()
@@ -83,7 +85,7 @@ class CircuitSymbol(CircuitItem):
         buttonBox.accepted.connect(recordValues)
         buttonBox.rejected.connect(dialog.close)
 
-        gridLayout.addWidget(buttonBox, i+1, 1)
+        gridLayout.addWidget(buttonBox, i + 1, 1)
         dialog.setLayout(gridLayout)
 
         dialog.exec()
@@ -100,6 +102,8 @@ class CircuitSymbol(CircuitItem):
     def createDecor(self):
         raise NotImplementedError()
 
+    def addToCircuit(self, circuit: Circuit):
+        pass
 
 class CircuitWire(CircuitSymbol):
     def createNodes(self):
@@ -125,7 +129,6 @@ class CircuitWire(CircuitSymbol):
 
 
 class GraphicalResistor(CircuitSymbol):
-
     NAME = "Resistor"
     # Type then display name then unit then unit tooltip
     ATTRIBUTES = {'resistance': [float, "Resistance", "Ω", "Ohms"]}
@@ -142,9 +145,12 @@ class GraphicalResistor(CircuitSymbol):
     def boundingRect(self):
         return QRectF(0, 0, 20, 100)
 
+    def addToCircuit(self, circuit: Circuit):
+        res = Resistor(**self.attributes)
+        circuit.add(res, (self.nodes[0].actual_node, self.nodes[1].actual_node))
+
 
 class GraphicalVoltageSource(CircuitSymbol):
-
     NAME = "Voltage Source"
     # Type then display name then unit then unit tooltip
     ATTRIBUTES = {'voltage': [float, "Voltage", "V", "Volts"]}
@@ -161,9 +167,12 @@ class GraphicalVoltageSource(CircuitSymbol):
     def boundingRect(self):
         return QRectF(0, 0, 20, 70)
 
+    def addToCircuit(self, circuit: Circuit):
+        pwr = VoltageSource(**self.attributes)
+        circuit.add(pwr, (self.nodes[0].actual_node, self.nodes[1].actual_node))
+
 
 class GraphicalDiode(CircuitSymbol):
-
     NAME = "Diode"
     ATTRIBUTES = {'breakdownVoltage': [float, "Breakdown Voltage", "V", "Volts"],
                   'saturationCurrent': [float, "Saturation Current", "A", "Amps"],
@@ -176,14 +185,18 @@ class GraphicalDiode(CircuitSymbol):
         return [CircuitNode(10, 0), CircuitNode(10, 40)]
 
     def createDecor(self):
-        triangle = QPolygonF([QPointF(0, 10+17.32), QPointF(20, 10+17.32), QPointF(10, 10)])
+        triangle = QPolygonF([QPointF(0, 10 + 17.32), QPointF(20, 10 + 17.32), QPointF(10, 10)])
         return [QGraphicsLineItem(10, 0, 10, 10),
-                QGraphicsLineItem(10, 10+17.32, 10, 40),
+                QGraphicsLineItem(10, 10 + 17.32, 10, 40),
                 QGraphicsPolygonItem(triangle),
                 QGraphicsLineItem(0, 10, 20, 10)]
 
     def boundingRect(self):
         return QRectF(0, 0, 20, 40)
+
+    def addToCircuit(self, circuit: Circuit):
+        diode = Diode(**self.attributes)
+        circuit.add(diode, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
 class GraphicalGround(CircuitSymbol):
@@ -202,6 +215,9 @@ class GraphicalGround(CircuitSymbol):
 
     def boundingRect(self):
         return QRectF(-10, 0, 30, 30)
+
+    def addToCircuit(self, circuit: Circuit):
+        pass
 
 
 COMPONENTS = [GraphicalResistor, GraphicalGround, GraphicalVoltageSource, GraphicalDiode]

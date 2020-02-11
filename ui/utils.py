@@ -10,5 +10,13 @@ def snap_point(p, base):
     return QPointF(round_nearest(p.x(), base), round_nearest(p.y(), base))
 
 
+def follow_duplications(duplications, n):
+    try:
+        while True:
+            n = duplications[n]
+    except KeyError:
+        return n
+
+
 defaultPen = QPen(Qt.black, 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
 selectedPen = QPen(Qt.blue, 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)

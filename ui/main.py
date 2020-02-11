@@ -1,7 +1,10 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction
 
+from general.Circuit import Circuit
+from general.Environment import Environment
 from ui.CircuitScene import CircuitScene
-from ui.GraphicalComponents import GraphicalDiode, GraphicalGround, COMPONENTS, CircuitSymbol
+from ui.GraphicalComponents import GraphicalDiode, GraphicalGround, COMPONENTS, CircuitSymbol, CircuitWire
+from ui.utils import follow_duplications
 from ui.visuals import CircuitNode, CircuitView
 
 
@@ -25,13 +28,48 @@ class MainWindow(QMainWindow):
 
     def run(self):
         components = list(filter(lambda item: isinstance(item, CircuitSymbol), self.mscene.items()))
+        # Reset node assignments
+        for c in components:
+            for n in c.nodes:
+                n.actual_node = -1
         print(components)
+        # Locate ground nodes
         gnd_components = list(filter(lambda x: isinstance(x, GraphicalGround), components))
+        print(gnd_components)
         if len(gnd_components) > 0:
             for gnd in gnd_components:
-                gnd.nodes[0].actual_node = 0
+                gnd.nodes[0].assignActualNode(0)
         else:
             self.statusBar().showMessage("Ground node required.")
+
+        env = Environment()
+        circuit = Circuit(env)
+
+        # Now we blindly assign nodes to all nodes
+        node_count = 1
+        # Nodes that actually are the same are stored here
+        node_duplications = {}
+        for c in components:
+            for n in c.nodes:
+                if n.actual_node == -1:
+                    n.assignActualNode(node_count)
+                    node_count += 1
+            # Now wires need to 'elide' nodes - equal the numbers across them
+            if isinstance(c, CircuitWire):
+                n1, n2 = c.nodes[0].actual_node, c.nodes[1].actual_node
+                n1, n2 = follow_duplications(node_duplications, n1), follow_duplications(node_duplications, n2)
+                if n1 != n2:
+                    # Map base nodes to each other
+                    node_duplications[n1] = n2
+        for c in components:
+            for n in c.nodes:
+                n.actual_node = follow_duplications(node_duplications, n.actual_node)
+            # Add to circuit
+            c.addToCircuit(circuit)
+        print(node_duplications)
+        if len(components):
+            circuit.finalise(gnd_components[0].nodes[0].actual_node)
+
 
     def addComponentFactory(self, component_class):
         def addComponent():
@@ -54,7 +92,7 @@ class MainWindow(QMainWindow):
         toolbar.addAction(runAction)
 
 
-if __name__ == '__main__':
+def run():
     app = QApplication([])
     wind = MainWindow()
     exit(app.exec_())

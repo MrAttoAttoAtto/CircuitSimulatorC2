@@ -60,6 +60,11 @@ class CircuitNode(QGraphicsRectItem):
         event.accept()
         self.scene().wireCreationEvent(self)
 
+    def assignActualNode(self, node:int):
+        self.actual_node = node
+        for n in self.connected:
+            n.actual_node = node
+
 
 class CircuitItem(QGraphicsItem):
 
