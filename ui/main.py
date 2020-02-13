@@ -2,8 +2,10 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QAction
 
 from general.Circuit import Circuit
 from general.Environment import Environment
+from general.Simulation import StaticSimulation
 from ui.CircuitScene import CircuitScene
-from ui.GraphicalComponents import GraphicalDiode, GraphicalGround, COMPONENTS, CircuitSymbol, CircuitWire
+from ui.GraphicalComponents import GraphicalDiode, GraphicalGround, COMPONENTS, CircuitSymbol, CircuitWire, \
+    GraphicalTestPoint
 from ui.utils import follow_duplications
 from ui.visuals import CircuitNode, CircuitView
 
@@ -57,18 +59,34 @@ class MainWindow(QMainWindow):
             # Now wires need to 'elide' nodes - equal the numbers across them
             if isinstance(c, CircuitWire):
                 n1, n2 = c.nodes[0].actual_node, c.nodes[1].actual_node
+                print(n1, n2)
                 n1, n2 = follow_duplications(node_duplications, n1), follow_duplications(node_duplications, n2)
+                print(n1, n2)
                 if n1 != n2:
                     # Map base nodes to each other
                     node_duplications[n1] = n2
+        print("----")
         for c in components:
+            print(c.NAME)
             for n in c.nodes:
+                print(n.actual_node, "->", follow_duplications(node_duplications, n.actual_node))
                 n.actual_node = follow_duplications(node_duplications, n.actual_node)
+            if isinstance(c, CircuitWire):
+                print(c.nodes[0].actual_node, c.nodes[1].actual_node)
             # Add to circuit
             c.addToCircuit(circuit)
         print(node_duplications)
         if len(components):
+            for c in components:
+                print(c.NAME)
+                for n in c.nodes:
+                    print(n.actual_node)
             circuit.finalise(gnd_components[0].nodes[0].actual_node)
+            sim = StaticSimulation(circuit, 10000)
+            sim.simulate()
+            for p in filter(lambda c: isinstance(c, GraphicalTestPoint), components):
+                print(p.nodes[0].actual_node, circuit.getInputReference(p.nodes[0].actual_node))
+
 
 
     def addComponentFactory(self, component_class):

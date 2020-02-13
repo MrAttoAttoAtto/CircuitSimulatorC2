@@ -105,7 +105,9 @@ class CircuitSymbol(CircuitItem):
     def addToCircuit(self, circuit: Circuit):
         pass
 
+
 class CircuitWire(CircuitSymbol):
+    NAME = "Wire"
     def createNodes(self):
         return [CircuitNode(),
                 CircuitNode(self.path.path().currentPosition().x(), self.path.path().currentPosition().y())]
@@ -223,4 +225,25 @@ class GraphicalGround(CircuitSymbol):
         pass
 
 
-COMPONENTS = [GraphicalResistor, GraphicalGround, GraphicalVoltageSource, GraphicalDiode]
+class GraphicalTestPoint(CircuitSymbol):
+    NAME = "Test Point"
+    ATTRIBUTES = {}
+    DEFAULT_ATTRIBUTES = {}
+
+    def createNodes(self):
+        return [CircuitNode(0, 30)]
+
+    def createDecor(self):
+        return [QGraphicsLineItem(0, 30, 15, 15),
+                QGraphicsLineItem(10, 10, 20, 20),
+                QGraphicsLineItem(10, 10, 30, 0),
+                QGraphicsLineItem(20, 20, 30, 0)]
+
+    def boundingRect(self):
+        return QRectF(0, 0, 30, 30)
+
+    def addToCircuit(self, circuit: Circuit):
+        pass
+
+
+COMPONENTS = [GraphicalResistor, GraphicalGround, GraphicalVoltageSource, GraphicalDiode, GraphicalTestPoint]

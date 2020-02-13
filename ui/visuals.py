@@ -80,7 +80,7 @@ class CircuitItem(QGraphicsItem):
         self.setFlag(QGraphicsItem.ItemIsFocusable, True)
 
     def itemChange(self, change, value):
-        if (change == QGraphicsItem.ItemSelectedChange):
+        if change == QGraphicsItem.ItemSelectedChange:
             if value == True:
                 pen = selectedPen
             else:
