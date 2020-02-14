@@ -1,8 +1,8 @@
 import traceback
 
-from PyQt5.QtCore import QPointF
+from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QMessageBox, QFileDialog, QGraphicsView
+from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QMessageBox, QFileDialog, QGraphicsView, QSplitter
 
 from general.Circuit import Circuit
 from general.Environment import Environment
@@ -14,7 +14,8 @@ from ui.SimulationWorker import TransientWorker
 from ui.UberPath import UberPath
 from ui.utils import follow_duplications
 from ui.visuals import CircuitView
-
+from pyqtgraph import PlotWidget
+import numpy as np
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -25,22 +26,25 @@ class MainWindow(QMainWindow):
 
         self.nodes_valid_state = False
         self.current_simulation = None
-        self.initUI()
-
-    def initUI(self):
+        self.splitter = QSplitter(Qt.Vertical, self)
         self.mscene = CircuitScene(self)
 
         self.mview = CircuitView(self.mscene)
         self.mview.setDragMode(QGraphicsView.RubberBandDrag)
-        self.setCentralWidget(self.mview)
+        self.splitter.addWidget(self.mview)
+        self.graphView = PlotWidget()
+        self.splitter.addWidget(self.graphView)
+        self.setGraphVisible(False)
+
+        self.setCentralWidget(self.splitter)
         self.createActions()
+        self.createMenuBar()
         self.statusBar().showMessage('Ready')
         self.resize(1920, 1080)
         self.activateWindow()
         self.setWindowTitle('Circuit Simulator')
         self.show()
         self.mview.zoomToFit()
-        self.createMenuBar()
 
     def run(self, static: bool):
         if self.current_simulation is not None:
@@ -111,15 +115,23 @@ class MainWindow(QMainWindow):
                 # Dynamic
                 watchedNodes = [p.nodes[0].actual_node for p in
                                 filter(lambda c: isinstance(c, GraphicalTestPoint), self.mscene.items())]
+                plot = self.graphView.getPlotItem()
+                plot.clear()
+                self.graphedNodes = {n: [plot.plot(pen=(i, len(watchedNodes))), [[],[]]] for i, n in enumerate(watchedNodes)}
                 self.current_simulation = TransientWorker(circuit, watchedNodes)
                 self.current_simulation.onStep.connect(self.checkTransientResults)
                 self.current_simulation.start()
+                self.setGraphVisible(True)
                 self.nodes_valid_state = False
                 self.stopDynamicAction.setDisabled(False)
 
     def checkTransientResults(self, result):
         self.nodes_valid_state = True
-        print(result)
+        for node in self.graphedNodes.keys():
+            # Update data
+            self.graphedNodes[node][1][0].append(result[0])
+            self.graphedNodes[node][1][1].append(result[1][node])
+            self.graphedNodes[node][0].setData(self.graphedNodes[node][1][0], self.graphedNodes[node][1][1])
 
     def stopTransientSimulation(self):
         self.current_simulation.halt()
@@ -135,6 +147,15 @@ class MainWindow(QMainWindow):
             self.setEdited()
 
         return addComponent
+
+    def setGraphVisible(self, visible: bool = True):
+        h = self.splitter.geometry().height()
+        if visible:
+            # Dont adjust if already custom
+            if self.splitter.sizes()[1] == 0:
+                self.splitter.setSizes([int(h*0.6), int(h*0.4)])
+        else:
+            self.splitter.setSizes([h, 0])
 
     def createActions(self):
         toolbar = self.addToolBar("Components")
