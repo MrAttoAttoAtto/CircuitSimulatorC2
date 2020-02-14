@@ -1,7 +1,5 @@
 from typing import List, Tuple
 
-import numpy as np
-
 from components.Component import Component
 from general.Circuit import Circuit
 from general.Environment import Environment
@@ -15,7 +13,7 @@ class Switch:
 
     isVoltageBased = False
 
-    def __init__(self, closed: bool = True, openG: float = 1e-30, closedG: float = 1e30):
+    def __init__(self, closed: bool = True, openG: float = 1e-12, closedG: float = 1e12):
         """
         Creates a switch, setting all the nodes to None before the switch is connected
 

@@ -24,7 +24,7 @@ def test_diode_forward_bias():
     diodeVoltage = circuit.getInputReference(2)
     circuitCurrent = circuit.getInputReference((1, 0, source.identifier))
 
-    sim = StaticSimulation(circuit, 100)
+    sim = StaticSimulation(circuit, 500)
     sim.simulate()
 
     assert isclose(diodeVoltage.value, 0.638)

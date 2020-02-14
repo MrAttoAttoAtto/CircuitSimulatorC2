@@ -51,7 +51,8 @@ class CircuitScene(QGraphicsScene):
             self._wire_spawn.targetPos = target.scenePos()
             self._wire_spawn.editPoint(-1, target.scenePos() - self._wire_spawn_source.scenePos())
             self.removeItem(self._wire_spawn)
-            new_wire = CircuitWire(self._wire_spawn)
+            new_wire = CircuitWire(self._wire_spawn, self.parent().next_id)
+            self.parent().next_id += 1
             self.addItem(new_wire)
             new_wire.nodes[0].connect(self._wire_spawn_source)
             new_wire.nodes[1].connect(target)

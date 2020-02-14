@@ -19,7 +19,7 @@ class Diode:
         :param saturationCurrent: The current (in Amps) allowed to flow when the diode is in reverse bias
         :param ideality: The ideality (n) of the diode as modelled by the Schottky Diode Equation
         """
-        
+
         # Basic diode properties
         self.breakdownVoltage = breakdownVoltage
         self.saturationCurrent = saturationCurrent
@@ -93,16 +93,16 @@ class Diode:
         # If the diode is in reverse bias more strong than the breakdown voltage, it's broken down!
         if voltageAcross < -self.breakdownVoltage:
             reverseBiasVoltage = -self.breakdownVoltage - voltageAcross
-            current = -(self.saturationCurrent * math.exp(reverseBiasVoltage/idealityTemperatureModifier))
+            current = -(self.saturationCurrent * math.exp(reverseBiasVoltage / idealityTemperatureModifier))
 
             conductance = self.saturationCurrent * \
-                math.exp(reverseBiasVoltage/idealityTemperatureModifier) / idealityTemperatureModifier
+                          math.exp(reverseBiasVoltage / idealityTemperatureModifier) / idealityTemperatureModifier
 
         else:
-            current = self.saturationCurrent * (math.exp(voltageAcross/idealityTemperatureModifier) - 1)
+            current = self.saturationCurrent * (math.exp(voltageAcross / idealityTemperatureModifier) - 1)
 
             conductance = self.saturationCurrent * \
-                math.exp(voltageAcross/idealityTemperatureModifier) / idealityTemperatureModifier
+                          math.exp(voltageAcross / idealityTemperatureModifier) / idealityTemperatureModifier
 
         self.anodeCurrent += current
         self.cathodeCurrent -= current

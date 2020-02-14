@@ -1,5 +1,6 @@
-from testutils import isclose
 import math
+
+from testutils import isclose
 
 from components.Capacitor import Capacitor
 from components.Resistor import Resistor
@@ -7,7 +8,7 @@ from components.Switch import Switch
 from components.VoltageSource import VoltageSource
 from general.Circuit import Circuit
 from general.Environment import Environment
-from general.Simulation import StaticSimulation, TransientSimulation
+from general.Simulation import TransientSimulation
 
 
 def test_capacitor_charge():

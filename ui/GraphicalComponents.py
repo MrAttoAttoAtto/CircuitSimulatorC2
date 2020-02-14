@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QDialogButt
 from components.ACVoltageSource import ACVoltageSource
 from components.Diode import Diode
 from components.Resistor import Resistor
+from components.Switch import Switch
 from components.VoltageSource import VoltageSource
 from general.Circuit import Circuit
 from ui.utils import defaultPen
@@ -17,8 +18,9 @@ class CircuitSymbol(CircuitItem):
     ATTRIBUTES = {}
     DEFAULT_ATTRIBUTES = {}
 
-    def __init__(self, x=0, y=0):
+    def __init__(self, uid, x=0, y=0):
         super().__init__()
+        self.uid = uid
         self.attributes = self.DEFAULT_ATTRIBUTES.copy()
         self.nodes = self.createNodes()
         self.decor = self.createDecor()
@@ -117,11 +119,11 @@ class CircuitWire(CircuitSymbol):
     def createDecor(self):
         return [self.path]
 
-    def __init__(self, m_path):
+    def __init__(self, m_path, uid):
         self.path = m_path
         old_pos = m_path.pos()
         m_path.setPos(0, 0)
-        super().__init__(old_pos.x(), old_pos.y())
+        super().__init__(uid, old_pos.x(), old_pos.y())
 
     def boundingRect(self):
         return self.path.boundingRect()
@@ -151,6 +153,7 @@ class GraphicalResistor(CircuitSymbol):
 
     def addToCircuit(self, circuit: Circuit):
         res = Resistor(**self.attributes)
+        res._patched_id = self.uid
         circuit.add(res, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
@@ -176,6 +179,7 @@ class GraphicalVoltageSource(CircuitSymbol):
 
     def addToCircuit(self, circuit: Circuit):
         pwr = VoltageSource(**self.attributes)
+        pwr._patched_id = self.uid
         circuit.add(pwr, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
@@ -206,6 +210,7 @@ class GraphicalACVoltageSource(CircuitSymbol):
 
     def addToCircuit(self, circuit: Circuit):
         pwr = ACVoltageSource(**self.attributes)
+        pwr._patched_id = self.uid
         circuit.add(pwr, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
@@ -233,6 +238,7 @@ class GraphicalDiode(CircuitSymbol):
 
     def addToCircuit(self, circuit: Circuit):
         diode = Diode(**self.attributes)
+        diode._patched_id = self.uid
         circuit.add(diode, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
@@ -278,9 +284,48 @@ class GraphicalTestPoint(CircuitSymbol):
         pass
 
 
+class GraphicalSwitch(CircuitSymbol):
+    NAME = "Switch"
+    ATTRIBUTES = {}
+    DEFAULT_ATTRIBUTES = {}
+
+    def __init__(self, uid, x=0, y=0):
+        super().__init__(uid, x, y)
+        self.open = False
+
+    def createNodes(self):
+        return [CircuitNode(0, 10), CircuitNode(60, 10)]
+
+    def createDecor(self):
+        return [QGraphicsLineItem(0, 10, 12, 10), QGraphicsLineItem(60, 10, 48, 10),
+                QGraphicsEllipseItem(12, 7, 6, 6), QGraphicsEllipseItem(42, 7, 6, 6),
+                QGraphicsLineItem(18, 9, 42, 0)]
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            if self.open:
+                self.open = False
+                self.decor[-1].setLine(18, 9, 45, 7)
+            else:
+                self.open = True
+                self.decor[-1].setLine(18, 9, 42, 0)
+            self.scene().parent().onSwitchStateChange(self.open, self.uid)
+            event.accept()
+        return super().mouseReleaseEvent(event)
+
+    def boundingRect(self):
+        return QRectF(0, 0, 60, 15)
+
+    def addToCircuit(self, circuit: Circuit):
+        switch = Switch(closed=not self.open)
+        switch._patched_id = self.uid
+        circuit.add(switch, (self.nodes[0].actual_node, self.nodes[1].actual_node))
+
+
 COMPONENTS = {"Resistor": GraphicalResistor,
               "Ground": GraphicalGround,
               "Voltage Source": GraphicalVoltageSource,
               "AC Voltage Source": GraphicalACVoltageSource,
               "Diode": GraphicalDiode,
-              "Test Point": GraphicalTestPoint}
+              "Test Point": GraphicalTestPoint,
+              "Switch": GraphicalSwitch}

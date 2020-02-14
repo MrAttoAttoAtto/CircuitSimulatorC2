@@ -41,7 +41,7 @@ class CircuitNode(QGraphicsRectItem):
         for n in self.connected.copy():
             self.disconnect(n)
 
-    def updateHoverState(self, hovered:bool):
+    def updateHoverState(self, hovered: bool):
         p = QPen(defaultPen)
         if hovered:
             # Red
@@ -63,10 +63,11 @@ class CircuitNode(QGraphicsRectItem):
         event.accept()
         self.scene().wireCreationEvent(self)
 
-    def assignActualNode(self, node:int):
+    def assignActualNode(self, node: int):
         self.actual_node = node
         for n in self.connected:
             n.actual_node = node
+
 
 class CircuitItem(QGraphicsItem):
 
@@ -152,4 +153,3 @@ class CircuitView(QGraphicsView):
             event.accept()
             return
         super().mouseReleaseEvent(event)
-

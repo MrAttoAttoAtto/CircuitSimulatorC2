@@ -3,6 +3,7 @@ import traceback
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QMessageBox, QFileDialog, QGraphicsView, QSplitter
+from pyqtgraph import PlotWidget
 
 from general.Circuit import Circuit
 from general.Environment import Environment
@@ -14,12 +15,13 @@ from ui.SimulationWorker import TransientWorker
 from ui.UberPath import UberPath
 from ui.utils import follow_duplications
 from ui.visuals import CircuitView
-from pyqtgraph import PlotWidget
-import numpy as np
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        self.next_id = 0
 
         self.edited = False
         self.currentFile = None
@@ -117,7 +119,8 @@ class MainWindow(QMainWindow):
                                 filter(lambda c: isinstance(c, GraphicalTestPoint), self.mscene.items())]
                 plot = self.graphView.getPlotItem()
                 plot.clear()
-                self.graphedNodes = {n: [plot.plot(pen=(i, len(watchedNodes))), [[],[]]] for i, n in enumerate(watchedNodes)}
+                self.graphedNodes = {n: [plot.plot(pen=(i, len(watchedNodes))), [[], []]] for i, n in
+                                     enumerate(watchedNodes)}
                 self.current_simulation = TransientWorker(circuit, watchedNodes)
                 self.current_simulation.onStep.connect(self.checkTransientResults)
                 self.current_simulation.start()
@@ -142,18 +145,23 @@ class MainWindow(QMainWindow):
 
     def addComponentFactory(self, component_class):
         def addComponent():
-            c = component_class(0, 0)
+            c = component_class(self.next_id, 0, 0)
+            self.next_id += 1
             self.mscene.addItem(c)
             self.setEdited()
 
         return addComponent
+
+    def onSwitchStateChange(self, newState: bool, uid: int):
+        if self.current_simulation:
+            self.current_simulation.notifySwitchStateChanged(newState, uid)
 
     def setGraphVisible(self, visible: bool = True):
         h = self.splitter.geometry().height()
         if visible:
             # Dont adjust if already custom
             if self.splitter.sizes()[1] == 0:
-                self.splitter.setSizes([int(h*0.6), int(h*0.4)])
+                self.splitter.setSizes([int(h * 0.6), int(h * 0.4)])
         else:
             self.splitter.setSizes([h, 0])
 
@@ -218,6 +226,7 @@ class MainWindow(QMainWindow):
 
     def new(self):
         if self.saveCheck():
+            self.next_id = 0
             self.currentFile = None
             self.edited = False
 
@@ -267,16 +276,17 @@ class MainWindow(QMainWindow):
 
                 newUberPath.editPoint(-1, targetPos - sourcePos)
 
-                newComponent = CircuitWire(newUberPath)
+                newComponent = CircuitWire(newUberPath, self.next_id)
             else:
                 x, y = position.split(",")
-                newComponent = COMPONENTS[name](float(x), float(y))
+                newComponent = COMPONENTS[name](self.next_id, float(x), float(y))
 
                 # If it has attributes...
                 if parameters != "":
                     parameterDict = {parameter: newComponent.ATTRIBUTES[parameter][0](value)
                                      for parameter, value in [pair.split("=") for pair in parameters.split(",")]}
                     newComponent.attributes = parameterDict
+            self.next_id += 1
 
             nodes = [int(node) for node in nodes.split(",")]
             nodeDict.update({nodeIndex: nodeObject for nodeIndex, nodeObject in zip(nodes, newComponent.nodes)})
