@@ -110,6 +110,21 @@ class CircuitView(QGraphicsView):
         else:
             self.scale(0.8, 0.8)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete or event.key() == Qt.Key_Backspace:
+            selected = list(filter(lambda x: x.isSelected(), self.scene().items()))
+            if len(selected) > 0:
+                # Delete the components
+                self.scene().parent().setEdited()
+                for c in selected:
+                    for n in c.nodes:
+                        n.disconnect_all()
+                    self.scene().removeItem(c)
+                event.accept()
+            event.ignore()
+        else:
+            return super().keyPressEvent(event)
+
     def mousePressEvent(self, event):
         if (event.button() == Qt.MiddleButton):
             self._panX, self._panY = event.x(), event.y()
