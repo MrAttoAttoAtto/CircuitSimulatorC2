@@ -108,6 +108,9 @@ class CircuitSymbol(CircuitItem):
 
 class CircuitWire(CircuitSymbol):
     NAME = "Wire"
+    ATTRIBUTES = {"caption": (str, "Caption", "", "")}
+    DEFAULT_ATTRIBUTES = {"caption": ""}
+
     def createNodes(self):
         return [CircuitNode(),
                 CircuitNode(self.path.path().currentPosition().x(), self.path.path().currentPosition().y())]
@@ -187,7 +190,7 @@ class GraphicalDiode(CircuitSymbol):
                           'ideality': 1.0}
 
     def createNodes(self):
-        return [CircuitNode(10, 0), CircuitNode(10, 40)]
+        return [CircuitNode(10, 40), CircuitNode(10, 0)]
 
     def createDecor(self):
         triangle = QPolygonF([QPointF(0, 10 + 17.32), QPointF(20, 10 + 17.32), QPointF(10, 10)])

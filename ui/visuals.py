@@ -26,6 +26,7 @@ class CircuitNode(QGraphicsRectItem):
         self.connected.add(target)
         for n in target.connected:
             n.connected.add(self)
+            self.connected.add(n)
         target.connected.add(self)
         self.updateHoverState(self.isUnderMouse())
         target.updateHoverState(self.isUnderMouse())
@@ -33,8 +34,6 @@ class CircuitNode(QGraphicsRectItem):
     def disconnect(self, target):
         self.connected.remove(target)
         target.connected.remove(self)
-        for n in target.connected:
-            n.connected.remove(self)
         self.updateHoverState(self.isUnderMouse())
         target.updateHoverState(self.isUnderMouse())
 
@@ -68,7 +67,6 @@ class CircuitNode(QGraphicsRectItem):
         self.actual_node = node
         for n in self.connected:
             n.actual_node = node
-
 
 class CircuitItem(QGraphicsItem):
 
