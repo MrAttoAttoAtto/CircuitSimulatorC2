@@ -6,6 +6,8 @@ class UberPath(QGraphicsPathItem):
     def __init__(self):
         super().__init__()
         self._points = []
+        self.sourcePos = None
+        self.targetPos = None
 
     def addPoint(self, point):
         self._points.append(point)

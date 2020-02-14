@@ -10,7 +10,7 @@ class VoltageSource:
     A standard DC voltage source
     """
 
-    def __init__(self, voltage: float):
+    def __init__(self, voltage: float = 10):
         """
         Creates a voltage source, setting all the nodes to None before the voltage source is connected
 

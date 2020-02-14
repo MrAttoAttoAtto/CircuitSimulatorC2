@@ -41,12 +41,14 @@ class CircuitScene(QGraphicsScene):
         self._wire_spawn = UberPath()
         self.addItem(self._wire_spawn)
         self._wire_spawn.setPen(defaultPen)
+        self._wire_spawn.sourcePos = source.scenePos()
         self._wire_spawn.setPos(source.scenePos())
         self._wire_spawn.addPoint(QPointF(0, 0))
         self._wire_spawn_source = source
 
     def endWireCreation(self, target):
         if target != self._wire_spawn_source:
+            self._wire_spawn.targetPos = target.scenePos()
             self._wire_spawn.editPoint(-1, target.scenePos() - self._wire_spawn_source.scenePos())
             self.removeItem(self._wire_spawn)
             new_wire = CircuitWire(self._wire_spawn)
@@ -55,3 +57,4 @@ class CircuitScene(QGraphicsScene):
             new_wire.nodes[1].connect(target)
             self._wire_spawn = None
             self._wire_spawn_source = None
+            self.parent().setEdited()

@@ -1,8 +1,9 @@
 from PyQt5.QtCore import Qt, QRectF, QPointF
-from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker
+from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker, QPainterPath
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QDialogButtonBox, QMessageBox, QGraphicsItem, \
-    QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem
+    QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem, QGraphicsPathItem
 
+from components.ACVoltageSource import ACVoltageSource
 from components.Diode import Diode
 from components.Resistor import Resistor
 from components.VoltageSource import VoltageSource
@@ -35,6 +36,7 @@ class CircuitSymbol(CircuitItem):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete or event.key() == Qt.Key_Backspace:
             # Delete the component
+            self.scene().parent().setEdited()
             for n in self.nodes:
                 n.disconnect_all()
             self.scene().removeItem(self)
@@ -43,6 +45,9 @@ class CircuitSymbol(CircuitItem):
             event.ignore()
 
     def mouseDoubleClickEvent(self, QGraphicsSceneMouseEvent):
+        if len(self.attributes) == 0:
+            return
+
         dialog = QDialog()
         dialog.setWindowTitle(f"{self.NAME} Configuration")
 
@@ -79,7 +84,9 @@ class CircuitSymbol(CircuitItem):
                     messageBox.exec()
                     return
 
-            self.attributes = middlemanMap
+            if self.attributes != middlemanMap:
+                self.attributes = middlemanMap
+                self.scene().parent().setEdited()
             dialog.close()
 
         buttonBox.accepted.connect(recordValues)
@@ -92,6 +99,9 @@ class CircuitSymbol(CircuitItem):
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionHasChanged:
+            scene = self.scene()
+            if scene is not None:
+                scene.parent().setEdited()
             for n in self.nodes:
                 n.disconnect_all()
         return super().itemChange(change, value)
@@ -180,6 +190,36 @@ class GraphicalVoltageSource(CircuitSymbol):
         circuit.add(pwr, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
+class GraphicalACVoltageSource(CircuitSymbol):
+    NAME = "AC Voltage Source"
+    # Type then display name then unit then unit tooltip
+    ATTRIBUTES = {'peakVoltage': [float, "Peak Voltage", "V", "Volts"],
+                  'frequency': [float, "Frequency", "Hz", "Hertz"]}
+    DEFAULT_ATTRIBUTES = {'peakVoltage': 9.0, 'frequency': 1.0}
+
+    def createNodes(self):
+        return [CircuitNode(10, 0), CircuitNode(10, 70)]
+
+    def createDecor(self):
+        curve = QPainterPath()
+        curve.moveTo(0, 35)
+        curve.arcTo(QRectF(0, 30, 10, 10), 180, -180)
+        curve.arcTo(QRectF(10, 30, 10, 10), 180, 180)
+        sine = QGraphicsPathItem()
+        sine.setPath(curve)
+        return [QGraphicsEllipseItem(-5, 20, 30, 30),
+                sine,
+                QGraphicsLineItem(10, 0, 10, 20),
+                QGraphicsLineItem(10, 50, 10, 70)]
+
+    def boundingRect(self):
+        return QRectF(0, 0, 20, 70)
+
+    def addToCircuit(self, circuit: Circuit):
+        pwr = ACVoltageSource(**self.attributes)
+        circuit.add(pwr, (self.nodes[0].actual_node, self.nodes[1].actual_node))
+
+
 class GraphicalDiode(CircuitSymbol):
     NAME = "Diode"
     ATTRIBUTES = {'breakdownVoltage': [float, "Breakdown Voltage", "V", "Volts"],
@@ -249,4 +289,9 @@ class GraphicalTestPoint(CircuitSymbol):
         pass
 
 
-COMPONENTS = [GraphicalResistor, GraphicalGround, GraphicalVoltageSource, GraphicalDiode, GraphicalTestPoint]
+COMPONENTS = {"Resistor": GraphicalResistor,
+              "Ground": GraphicalGround,
+              "Voltage Source": GraphicalVoltageSource,
+              "AC Voltage Source": GraphicalACVoltageSource,
+              "Diode": GraphicalDiode,
+              "Test Point": GraphicalTestPoint}

@@ -5,11 +5,8 @@ import numpy as np
 import scipy.linalg
 
 from general.Environment import Environment
+from general.Exceptions import ConvergenceFailure
 from utils.MutableFloat import MutableFloat
-
-
-class ConvergenceFailure(Exception):
-    pass
 
 
 class Circuit:

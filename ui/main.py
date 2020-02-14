@@ -1,4 +1,8 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QAction
+import traceback
+
+from PyQt5.QtCore import QPointF
+from PyQt5.QtGui import QKeySequence
+from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QMessageBox, QFileDialog, QGraphicsView
 
 from general.Circuit import Circuit
 from general.Environment import Environment
@@ -7,6 +11,7 @@ from ui.CircuitScene import CircuitScene
 from ui.GraphicalComponents import GraphicalGround, COMPONENTS, CircuitSymbol, CircuitWire, \
     GraphicalTestPoint
 from ui.SimulationWorker import TransientWorker
+from ui.UberPath import UberPath
 from ui.utils import follow_duplications
 from ui.visuals import CircuitView
 
@@ -14,14 +19,19 @@ from ui.visuals import CircuitView
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        self.edited = False
+        self.currentFile = None
+
         self.nodes_valid_state = False
         self.current_simulation = None
         self.initUI()
 
     def initUI(self):
-        self.mscene = CircuitScene()
+        self.mscene = CircuitScene(self)
 
         self.mview = CircuitView(self.mscene)
+        self.mview.setDragMode(QGraphicsView.RubberBandDrag)
         self.setCentralWidget(self.mview)
         self.createActions()
         self.statusBar().showMessage('Ready')
@@ -30,6 +40,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Circuit Simulator')
         self.show()
         self.mview.zoomToFit()
+        self.createMenuBar()
 
     def run(self, static: bool):
         if self.current_simulation is not None:
@@ -46,6 +57,7 @@ class MainWindow(QMainWindow):
                 gnd.nodes[0].assignActualNode(0)
         else:
             self.statusBar().showMessage("Ground node required.")
+            return
 
         env = Environment()
         circuit = Circuit(env)
@@ -77,7 +89,19 @@ class MainWindow(QMainWindow):
             self.runDynamicAction.setDisabled(True)
             if static:
                 sim = StaticSimulation(circuit, 10000)
-                sim.simulate()
+                try:
+                    sim.simulate()
+                except Exception as e:
+                    errorBox = QMessageBox()
+                    errorBox.setText(f"The simulation failed with error {e.__class__.__name__}")
+                    errorBox.setInformativeText(f'"{str(e)}"')
+                    errorBox.setDetailedText(''.join(traceback.format_exception(e.__class__, e, e.__traceback__)))
+                    errorBox.setWindowTitle("Circuit Failure")
+                    errorBox.setIcon(QMessageBox.Warning)
+
+                    errorBox.exec()
+                    return
+
                 self.nodes_valid_state = True
                 for p in filter(lambda c: isinstance(c, GraphicalTestPoint), self.mscene.items()):
                     print(p.nodes[0].actual_node, circuit.getInputReference(p.nodes[0].actual_node))
@@ -107,13 +131,14 @@ class MainWindow(QMainWindow):
         def addComponent():
             c = component_class(0, 0)
             self.mscene.addItem(c)
+            self.setEdited()
 
         return addComponent
 
     def createActions(self):
         toolbar = self.addToolBar("Components")
 
-        for c in COMPONENTS:
+        for c in COMPONENTS.values():
             action = QAction(c.NAME, toolbar)
             action.triggered.connect(self.addComponentFactory(c))
             toolbar.addAction(action)
@@ -129,6 +154,241 @@ class MainWindow(QMainWindow):
         toolbar.addAction(self.runStaticAction)
         toolbar.addAction(self.runDynamicAction)
         toolbar.addAction(self.stopDynamicAction)
+
+    def createMenuBar(self):
+        menuBar = self.menuBar()
+
+        fileMenu = menuBar.addMenu("File")
+
+        newAction = QAction("New", menuBar)
+        newAction.triggered.connect(self.new)
+        newAction.setShortcut(QKeySequence("Ctrl+N"))
+        fileMenu.addAction(newAction)
+
+        openAction = QAction("Open", menuBar)
+        openAction.triggered.connect(self.open)
+        openAction.setShortcut(QKeySequence("Ctrl+O"))
+        fileMenu.addAction(openAction)
+
+        fileMenu.addSeparator()
+
+        saveAction = QAction("Save", menuBar)
+        saveAction.triggered.connect(self.save)
+        saveAction.setShortcut(QKeySequence("Ctrl+S"))
+        fileMenu.addAction(saveAction)
+
+        saveAsAction = QAction("Save As...", menuBar)
+        saveAsAction.triggered.connect(self.saveAs)
+        saveAsAction.setShortcut(QKeySequence("Shift+Ctrl+S"))
+        fileMenu.addAction(saveAsAction)
+
+        fileMenu.addSeparator()
+
+        closeAction = QAction("Quit", menuBar)
+        closeAction.triggered.connect(self.close)
+        closeAction.setShortcut(QKeySequence("Ctrl+Q"))
+        fileMenu.addAction(closeAction)
+
+    def setEdited(self):
+        self.edited = True
+        if self.currentFile is not None:
+            self.setWindowTitle(f"Circuit Simulator ({self.currentFile}*)")
+
+    def new(self):
+        if self.saveCheck():
+            self.currentFile = None
+            self.edited = False
+
+            self.mscene.clear()
+
+            self.setWindowTitle("Circuit Simulator")
+
+            return True
+
+        return False
+
+    def open(self):
+        fileName = QFileDialog.getOpenFileName(self, "Open...", None, "Circuit Files (*.cir)",
+                                               "Circuit Files (*.cir)")[0]
+
+        if fileName == "":
+            return
+
+        if not self.new():
+            return
+
+        with open(fileName, 'r') as fil:
+            data = fil.read()
+
+        lines = data.split("\n")
+        nodeLine = lines[0]
+        componentLines = lines[1:]
+
+        nodeDict = {}
+        for componentLine in componentLines:
+            name, parameters, nodes, position = componentLine.split(":")
+
+            if name == "Wire":
+                newUberPath = UberPath()
+                points = [QPointF(float(x), float(y)) for x, y in [pair.split(",") for pair in position.split(";")]]
+                sourcePos = points[0]
+                targetPos = points[-1]
+                leftoverPoints = points[1:-1]
+
+                newUberPath.sourcePos = sourcePos
+                newUberPath.targetPos = targetPos
+
+                newUberPath.setPos(sourcePos)
+                newUberPath.addPoint(QPointF(0, 0))
+                # Position is the sequence of points here
+                [newUberPath.addPoint(point) for point in leftoverPoints]
+
+                newUberPath.editPoint(-1, targetPos - sourcePos)
+
+                newComponent = CircuitWire(newUberPath)
+            else:
+                x, y = position.split(",")
+                newComponent = COMPONENTS[name](float(x), float(y))
+
+                # If it has attributes...
+                if parameters != "":
+                    parameterDict = {parameter: newComponent.ATTRIBUTES[parameter][0](value)
+                                     for parameter, value in [pair.split("=") for pair in parameters.split(",")]}
+                    newComponent.attributes = parameterDict
+
+            nodes = [int(node) for node in nodes.split(",")]
+            nodeDict.update({nodeIndex: nodeObject for nodeIndex, nodeObject in zip(nodes, newComponent.nodes)})
+
+            self.mscene.addItem(newComponent)
+
+        for nodeConnections in nodeLine.split(":"):
+            node, connects = nodeConnections.split("=")
+
+            # This node isn't connected to anything
+            if connects == "":
+                continue
+
+            nodeObject = nodeDict[int(node)]
+            connectObjects = [nodeDict[int(connect)] for connect in connects.split(',')]
+
+            for connectObject in connectObjects:
+                nodeObject.connect(connectObject)
+
+        self.currentFile = fileName
+        self.statusBar().showMessage("File opened successfully.")
+        self.setWindowTitle(f"Circuit Simulator ({self.currentFile})")
+        self.edited = False
+
+        return True
+
+    def save(self):
+        if self.currentFile is None:
+            return self.saveAs()
+
+        components = list(filter(lambda item: isinstance(item, CircuitSymbol), self.mscene.items()))
+
+        nodes = [node for component in components for node in component.nodes]
+        acceptedConnections = []
+        nodeConnectionDict = {}
+        for node in nodes:
+            nodeIndex = nodes.index(node)
+            connectedNodeIndices = [nodes.index(conn) for conn in node.connected]
+
+            # Makes sure things are only connected once
+            acceptedNodeConnections = []
+            for connectedNodeIndex in connectedNodeIndices:
+                if (nodeConnectionDict.get(nodeIndex) is None or
+                        connectedNodeIndex not in nodeConnectionDict[nodeIndex]):
+                    acceptedNodeConnections.append(connectedNodeIndex)
+                    if nodeConnectionDict.get(connectedNodeIndex) is None:
+                        nodeConnectionDict[connectedNodeIndex] = [nodeIndex]
+                    else:
+                        nodeConnectionDict[connectedNodeIndex].append(nodeIndex)
+
+            acceptedConnections.append((nodeIndex, acceptedNodeConnections))
+
+        nodeString = ':'.join(f"{conn[0]}={','.join(str(cted) for cted in conn[1])}" for conn in acceptedConnections)
+
+        componentEntries = []
+        for component in components:
+
+            parameterString = ",".join(f"{parameter}={value}" for parameter, value in component.attributes.items())
+            ownedNodes = ",".join(str(nodes.index(node)) for node in component.nodes)
+
+            if component.NAME != "Wire":
+                position = component.scenePos()
+                positionString = f"{position.x()},{position.y()}"
+            else:
+                sourceString = f"{component.path.sourcePos.x()},{component.path.sourcePos.y()}"
+                targetString = f"{component.path.targetPos.x()},{component.path.targetPos.y()}"
+                positionString = sourceString + ';' + \
+                                 ";".join(f"{point.x()},{point.y()}" for point in
+                                          component.path._points) + ';' + targetString
+
+            componentEntries.append(f"{component.NAME}:{parameterString}:{ownedNodes}:{positionString}")
+
+        saveText = nodeString + "\n"
+        saveText += '\n'.join(componentEntries)
+
+        try:
+            with open(self.currentFile, 'w+') as fil:
+                fil.write(saveText)
+
+            self.statusBar().showMessage("File saved successfully.")
+            self.setWindowTitle(f"Circuit Simulator ({self.currentFile})")
+            self.edited = False
+
+            return True
+        except Exception as e:
+            errorBox = QMessageBox()
+            errorBox.setText(f"Saving failed with error {e.__class__.__name__}")
+            errorBox.setInformativeText(f'"{str(e)}"')
+            errorBox.setDetailedText(''.join(traceback.format_exception(e.__class__, e, e.__traceback__)))
+            errorBox.setWindowTitle("Save Failure")
+            errorBox.setIcon(QMessageBox.Warning)
+
+            errorBox.exec()
+
+            return False
+
+    def saveAs(self):
+        fileName = QFileDialog.getSaveFileName(self, "Save As...", "untitled.cir", "Circuit Files (*.cir)",
+                                               "Circuit Files (*.cir)")[0]
+
+        if fileName != "":
+            self.currentFile = fileName
+            return self.save()
+
+        return False
+
+    def saveCheck(self):
+        if self.edited:
+            saveBox = QMessageBox()
+            saveBox.setText(f"You have unsaved changes")
+            saveBox.setInformativeText("Are you sure you want to close the current file? Unsaved changes will be lost.")
+            saveBox.setWindowTitle("Unsaved Changes")
+            saveBox.setIcon(QMessageBox.Question)
+            saveBox.addButton(QMessageBox.Discard)
+            saveBox.addButton(QMessageBox.Save)
+            saveBox.addButton(QMessageBox.Cancel)
+            saveBox.setDefaultButton(QMessageBox.Save)
+
+            ret = saveBox.exec()
+
+            if ret == QMessageBox.Cancel:
+                return False
+            elif ret == QMessageBox.Save:
+                return self.save()
+            else:
+                return True
+
+        return True
+
+    def closeEvent(self, QCloseEvent):
+        if self.saveCheck():
+            QCloseEvent.accept()
+        else:
+            QCloseEvent.ignore()
 
 
 def run():
