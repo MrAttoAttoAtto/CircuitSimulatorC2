@@ -387,6 +387,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, QCloseEvent):
         if self.saveCheck():
+            self.current_simulation.halt()
             QCloseEvent.accept()
         else:
             QCloseEvent.ignore()
