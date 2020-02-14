@@ -123,6 +123,7 @@ class MainWindow(QMainWindow):
 
     def stopTransientSimulation(self):
         self.current_simulation.halt()
+        self.current_simulation = None
         self.stopDynamicAction.setDisabled(True)
         self.runDynamicAction.setDisabled(False)
         self.runStaticAction.setDisabled(False)
