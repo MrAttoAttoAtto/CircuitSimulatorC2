@@ -3,6 +3,7 @@ import traceback
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QMessageBox, QFileDialog, QGraphicsView, QSplitter
+import pyqtgraph as pg
 from pyqtgraph import PlotWidget
 
 from general.Circuit import Circuit
@@ -36,7 +37,8 @@ class MainWindow(QMainWindow):
         self.mview = CircuitView(self.mscene)
         self.mview.setDragMode(QGraphicsView.RubberBandDrag)
         self.splitter.addWidget(self.mview)
-        self.graphView = PlotWidget()
+        pg.setConfigOption("foreground", 'k')
+        self.graphView = PlotWidget(background='w')
         self.splitter.addWidget(self.graphView)
         self.setGraphVisible(False)
 
@@ -123,7 +125,7 @@ class MainWindow(QMainWindow):
                 plot.clear()
                 self.maxGraphSteps = self.settings.get("graphTimeRange") // self.settings.get("simulationFidelity")
                 self.graphedTime = []
-                self.graphedNodes = {n: [plot.plot(pen=(i, len(watchedNodes))), []] for i, n in
+                self.graphedNodes = {n: [plot.plot(pen=pg.mkPen(color=(i, len(watchedNodes)), width=2)), []] for i, n in
                                      enumerate(watchedNodes)}
                 self.current_simulation = TransientWorker(circuit, watchedNodes, self.settings.get("convergenceLimit"),
                                                           self.settings.get("timeBase"),

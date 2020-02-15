@@ -78,7 +78,6 @@ class Circuit:
         return self.jacobian[self.node_mapping[nodeA], self.node_mapping[nodeB]] \
             if nodeA != self.groundNode and nodeB != self.groundNode else MutableFloat()
 
-
     def solve(self, convergence_limit: int, stamp_f: Callable[['Component', Environment], None]):
         # TODO do better guessing!
         extract_value = np.vectorize(lambda x: x.value, otypes=[np.float64])
@@ -106,7 +105,7 @@ class Circuit:
             resultVector = [-x.value for x in self.resultVector]
 
             # Solve matrices
-            delta_in = scipy.linalg.lapack.dgesv(jac+1e-12, resultVector)[2]
+            delta_in = scipy.linalg.lapack.dgesv(jac + 1e-12, resultVector)[2]
             for i, inputValue in enumerate(self.inputVector):
                 inputValue += delta_in[i]
 

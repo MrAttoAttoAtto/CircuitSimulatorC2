@@ -29,4 +29,4 @@ def test_resistor_static():
 
     res1.resistance = 1000
     sim.simulate()
-    assert isclose(vref.value, 1/3)
+    assert isclose(vref.value, 1 / 3)
