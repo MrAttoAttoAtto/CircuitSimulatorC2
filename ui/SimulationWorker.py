@@ -65,7 +65,8 @@ class TransientWorker(QObject):
 
         self._process = multiprocessing.Process(target=_transient_simulate,
                                                 args=(
-                                                    circuit, watchedNodes, self.resultsQueue, self.commandQueue, delta_t, convergenceLimit, resultInterval))
+                                                    circuit, watchedNodes, self.resultsQueue, self.commandQueue, delta_t, convergenceLimit, resultInterval),
+                                                daemon=True)
 
     def start(self):
         self._process.start()

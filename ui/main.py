@@ -121,11 +121,14 @@ class MainWindow(QMainWindow):
                                 filter(lambda c: isinstance(c, GraphicalTestPoint), self.mscene.items())]
                 plot = self.graphView.getPlotItem()
                 plot.clear()
-                self.graphedNodes = {n: [plot.plot(pen=(i, len(watchedNodes))), [[], []]] for i, n in
+                self.maxGraphSteps = self.settings.get("graphTimeRange") // self.settings.get("simulationFidelity")
+                self.graphedTime = []
+                self.graphedNodes = {n: [plot.plot(pen=(i, len(watchedNodes))), []] for i, n in
                                      enumerate(watchedNodes)}
                 self.current_simulation = TransientWorker(circuit, watchedNodes, self.settings.get("convergenceLimit"),
                                                           self.settings.get("timeBase"),
                                                           self.settings.get("simulationFidelity"))
+
                 self.current_simulation.onStep.connect(self.checkTransientResults)
                 self.current_simulation.start()
                 self.setGraphVisible(True)
@@ -134,11 +137,17 @@ class MainWindow(QMainWindow):
 
     def checkTransientResults(self, result):
         self.nodes_valid_state = True
+        # Add time
+        self.graphedTime.append(result[0])
+        # Really inefficient?
+        if len(self.graphedTime) > self.maxGraphSteps:
+            self.graphedTime.pop(0)
         for node in self.graphedNodes.keys():
             # Update data
-            self.graphedNodes[node][1][0].append(result[0])
-            self.graphedNodes[node][1][1].append(result[1][node])
-            self.graphedNodes[node][0].setData(self.graphedNodes[node][1][0], self.graphedNodes[node][1][1])
+            self.graphedNodes[node][1].append(result[1][node])
+            if len(self.graphedNodes[node][1]) > self.maxGraphSteps:
+                self.graphedNodes[node][1].pop(0)
+            self.graphedNodes[node][0].setData(self.graphedTime, self.graphedNodes[node][1])
 
     def stopTransientSimulation(self):
         self.current_simulation.halt()

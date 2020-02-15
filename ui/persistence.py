@@ -13,7 +13,8 @@ class ProgramSettings:
     SETTINGS = {
         "convergenceLimit": ("Convergence Limit", int, 10000),
         "timeBase": ("Time Base", float, 1e-5),
-        "simulationFidelity": ("Simulation Update Interval", float, 1e-2)
+        "simulationFidelity": ("Simulation Update Interval", float, 1e-2),
+        "graphTimeRange": ("Graph Time Range", float, 5.0)
     }
 
     def __init__(self):
