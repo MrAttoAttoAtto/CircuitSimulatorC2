@@ -132,10 +132,26 @@ class MainWindow(QMainWindow):
                                                           self.settings.get("simulationFidelity"))
 
                 self.current_simulation.onStep.connect(self.checkTransientResults)
+                self.current_simulation.onError.connect(self.onSimulationError)
                 self.current_simulation.start()
                 self.setGraphVisible(True)
                 self.nodes_valid_state = False
                 self.stopDynamicAction.setDisabled(False)
+
+    def onSimulationError(self, e: Exception):
+        self.current_simulation.halt()
+        self.current_simulation = None
+        self.stopDynamicAction.setDisabled(True)
+        self.runDynamicAction.setDisabled(False)
+        self.runStaticAction.setDisabled(False)
+        errorBox = QMessageBox()
+        errorBox.setText(f"The simulation failed with error {e.__class__.__name__}")
+        errorBox.setInformativeText(f'"{str(e)}"')
+        errorBox.setDetailedText(''.join(traceback.format_exception(e.__class__, e, e.__traceback__)))
+        errorBox.setWindowTitle("Circuit Failure")
+        errorBox.setIcon(QMessageBox.Warning)
+
+        errorBox.exec()
 
     def checkTransientResults(self, result):
         self.nodes_valid_state = True

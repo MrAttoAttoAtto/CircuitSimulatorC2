@@ -19,38 +19,41 @@ def _transient_simulate(circuit: Circuit, watchedNodes: [int], outQueue: multipr
     watchedRefs = {n: circuit.getInputReference(n) for n in watchedNodes}
     resultIntervalCount = resultInterval // delta_t
     i = 0
-    while True:
-        if i == resultIntervalCount:
-            # Check messages from main
-            try:
-                w = inQueue.get(False)
-                if w is None:
-                    # Trigger to stop
-                    break
-                else:
-                    if w[0] == WorkerMessage.CHANGE_WATCHED:
-                        watchedNodes = w[1]
-                        watchedRefs = {n: circuit.getInputReference(n) for n in w}
-                    elif w[0] == WorkerMessage.SWITCH_STATE_CHANGE:
-                        for c in circuit.components:
-                            if c._patched_id == w[1]:
-                                c.closed = not w[2]
-                                break
+    try:
+        while True:
+            if i == resultIntervalCount:
+                # Check messages from main
+                try:
+                    w = inQueue.get(False)
+                    if w is None:
+                        # Trigger to stop
+                        break
                     else:
-                        raise Exception("Invalid Message")
-            except queue.Empty:
-                pass
-            # Send updated values
-            outQueue.put((circuit.environment.time, {n: ref.value for (n, ref) in watchedRefs.items()}))
-            i = 0
-        i += 1
-
-        # Simulate a step
-        sim.step()
+                        if w[0] == WorkerMessage.CHANGE_WATCHED:
+                            watchedNodes = w[1]
+                            watchedRefs = {n: circuit.getInputReference(n) for n in w}
+                        elif w[0] == WorkerMessage.SWITCH_STATE_CHANGE:
+                            for c in circuit.components:
+                                if c._patched_id == w[1]:
+                                    c.closed = not w[2]
+                                    break
+                        else:
+                            raise Exception("Invalid Message")
+                except queue.Empty:
+                    pass
+                # Send updated values
+                outQueue.put((circuit.environment.time, {n: ref.value for (n, ref) in watchedRefs.items()}))
+                i = 0
+            i += 1
+            # Simulate a step
+            sim.step()
+    except Exception as e:
+        outQueue.put(e)
 
 
 class TransientWorker(QObject):
     onStep = pyqtSignal(object)
+    onError = pyqtSignal(object)
 
     def __init__(self, circuit: Circuit, watchedNodes: [int], convergenceLimit: int, delta_t: float, resultInterval: float):
         super().__init__()
@@ -91,11 +94,12 @@ class TransientWorker(QObject):
         return res
 
     def _periodicCheck(self):
-        i = 0
         while True:
             try:
-                self.onStep.emit(self.resultsQueue.get(False))
-                i += 1
+                res = self.resultsQueue.get(False)
+                if isinstance(res, Exception):
+                    self.onError.emit(res)
+                else:
+                    self.onStep.emit(res)
             except queue.Empty:
                 break
-        print(i)
