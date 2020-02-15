@@ -6,8 +6,6 @@ from general.Environment import Environment
 
 
 class Capacitor:
-    isVoltageBased = False
-
     def __init__(self, capacitance: float):
         self.capacitance = capacitance
 

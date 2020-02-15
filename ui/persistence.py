@@ -1,5 +1,6 @@
 from PyQt5.QtCore import QPointF, QSettings
-from PyQt5.QtWidgets import QDialog, QFormLayout, QLineEdit, QDialogButtonBox, QVBoxLayout, QMessageBox
+from PyQt5.QtWidgets import QDialog, QLineEdit, QDialogButtonBox, QVBoxLayout, QMessageBox, QGridLayout, \
+    QLabel
 
 from ui.CircuitScene import CircuitScene
 from ui.GraphicalComponents import CircuitWire, COMPONENTS, CircuitSymbol
@@ -9,45 +10,53 @@ from ui.UberPath import UberPath
 class ProgramSettings:
     """Maintains program-wide user adjustable settings, and logic for the settings dialog."""
 
-    # key: (human-readable name, type, default)
+    # key: (human-readable name, unit, type, default)
     SETTINGS = {
-        "convergenceLimit": ("Convergence Limit", int, 10000),
-        "timeBase": ("Time Base", float, 1e-5),
-        "simulationFidelity": ("Simulation Update Interval", float, 1e-2),
-        "graphTimeRange": ("Graph Time Range", float, 5.0)
+        "convergenceLimit": ("Convergence Limit", " ", int, 10000),
+        "timeBase": ("Time Base", "s", float, 1e-5),
+        "simulationFidelity": ("Simulation Update Interval", "s", float, 1e-2),
+        "graphTimeRange": ("Graph Time Range", "s", float, 5.0)
     }
 
     def __init__(self):
         self._settings = QSettings("bekos", "CircuitSimulatorC2")
         # Load with defaults
-        self.settings = {key: self._settings.value(key, self.SETTINGS[key][2], self.SETTINGS[key][1]) for key in
+        self.settings = {key: self._settings.value(key, self.SETTINGS[key][3], self.SETTINGS[key][2]) for key in
                          self.SETTINGS.keys()}
 
     def get(self, key):
         return self.settings[key]
 
     def set(self, key, value):
-        val = self.SETTINGS[key][1](value)
+        val = self.SETTINGS[key][2](value)
         self.settings[key] = val
         self._settings.setValue(key, val)
 
     def displayDialog(self):
         dialog = QDialog()
         dialog.setWindowTitle("Settings")
-        formLayout = QFormLayout()
+
+        gridLayout = QGridLayout()
         entryComponents = {}
-        for key in self.SETTINGS.keys():
+        for i, key in enumerate(self.SETTINGS.keys()):
             entryWidget = QLineEdit()
             entryWidget.setText(str(self.get(key)))
-            formLayout.addRow(self.SETTINGS[key][0], entryWidget)
+            label = QLabel(f"{self.SETTINGS[key][0]}:")
+            unitLabel = QLabel(self.SETTINGS[key][1])
+
             entryComponents[key] = entryWidget
+
+            gridLayout.addWidget(label, i, 0)
+            gridLayout.addWidget(entryWidget, i, 1)
+            gridLayout.addWidget(unitLabel, i, 2)
+
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
         def saveSettings():
             tempMap = {}
             for key, component in entryComponents.items():
                 try:
-                    tempMap[key] = self.SETTINGS[key][1](component.text())
+                    tempMap[key] = self.SETTINGS[key][2](component.text())
                 except ValueError as e:
                     messageBox = QMessageBox()
                     messageBox.setText(f"An invalid parameter was specified for {self.SETTINGS[key][0]}")
@@ -66,7 +75,7 @@ class ProgramSettings:
         buttonBox.accepted.connect(saveSettings)
 
         vlayout = QVBoxLayout()
-        vlayout.addLayout(formLayout)
+        vlayout.addLayout(gridLayout)
         vlayout.addWidget(buttonBox)
         dialog.setLayout(vlayout)
         dialog.exec_()
