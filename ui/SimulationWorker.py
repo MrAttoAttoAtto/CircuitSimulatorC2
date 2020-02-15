@@ -14,10 +14,10 @@ class WorkerMessage(Enum):
 
 
 def _transient_simulate(circuit: Circuit, watchedNodes: [int], outQueue: multiprocessing.Queue,
-                        inQueue: multiprocessing.Queue, resultInterval: float):
-    sim = TransientSimulation(circuit, 10000, 1e-5)
+                        inQueue: multiprocessing.Queue, delta_t: float, convergenceLimit: int, resultInterval: float):
+    sim = TransientSimulation(circuit, convergenceLimit, delta_t)
     watchedRefs = {n: circuit.getInputReference(n) for n in watchedNodes}
-    resultIntervalCount = resultInterval // 1e-5
+    resultIntervalCount = resultInterval // delta_t
     i = 0
     while True:
         if i == resultIntervalCount:
@@ -52,23 +52,25 @@ def _transient_simulate(circuit: Circuit, watchedNodes: [int], outQueue: multipr
 class TransientWorker(QObject):
     onStep = pyqtSignal(object)
 
-    def __init__(self, circuit: Circuit, watchedNodes: [int]):
+    def __init__(self, circuit: Circuit, watchedNodes: [int], convergenceLimit: int, delta_t: float, resultInterval: float):
         super().__init__()
         self.watchedNodes = watchedNodes
         self.resultsQueue = multiprocessing.Queue()
         self.commandQueue = multiprocessing.Queue()
+
+        self.timerPeriod = int((resultInterval/delta_t) * (10*0.00001/0.001))
 
         self.checkTimer = QTimer()
         self.checkTimer.timeout.connect(self._periodicCheck)
 
         self._process = multiprocessing.Process(target=_transient_simulate,
                                                 args=(
-                                                    circuit, watchedNodes, self.resultsQueue, self.commandQueue,
-                                                    10 / 1000))
+                                                    circuit, watchedNodes, self.resultsQueue, self.commandQueue, delta_t, convergenceLimit, resultInterval))
 
     def start(self):
         self._process.start()
-        self.checkTimer.start(20)
+
+        self.checkTimer.start(self.timerPeriod)
 
     def setWatchedNodes(self, watchedNodes: [int]):
         self.commandQueue.put((WorkerMessage.CHANGE_WATCHED, watchedNodes))
@@ -88,9 +90,11 @@ class TransientWorker(QObject):
         return res
 
     def _periodicCheck(self):
+        i = 0
         while True:
             try:
                 self.onStep.emit(self.resultsQueue.get(False))
-                print("Emitted onStep")
+                i += 1
             except queue.Empty:
                 break
+        print(i)

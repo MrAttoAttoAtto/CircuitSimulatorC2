@@ -1,6 +1,6 @@
 import traceback
 
-from PyQt5.QtCore import QPointF, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QMessageBox, QFileDialog, QGraphicsView, QSplitter
 from pyqtgraph import PlotWidget
@@ -8,11 +8,11 @@ from pyqtgraph import PlotWidget
 from general.Circuit import Circuit
 from general.Environment import Environment
 from general.Simulation import StaticSimulation
+from ui import persistence
 from ui.CircuitScene import CircuitScene
-from ui.GraphicalComponents import GraphicalGround, COMPONENTS, CircuitSymbol, CircuitWire, \
-    GraphicalTestPoint
+from ui.GraphicalComponents import GraphicalGround, COMPONENTS, CircuitSymbol, CircuitWire, GraphicalTestPoint
 from ui.SimulationWorker import TransientWorker
-from ui.UberPath import UberPath
+from ui.persistence import ProgramSettings
 from ui.utils import follow_duplications
 from ui.visuals import CircuitView
 
@@ -25,6 +25,8 @@ class MainWindow(QMainWindow):
 
         self.edited = False
         self.currentFile = None
+
+        self.settings = ProgramSettings()
 
         self.nodes_valid_state = False
         self.current_simulation = None
@@ -94,7 +96,7 @@ class MainWindow(QMainWindow):
             self.runStaticAction.setDisabled(True)
             self.runDynamicAction.setDisabled(True)
             if static:
-                sim = StaticSimulation(circuit, 10000)
+                sim = StaticSimulation(circuit, self.settings.get("convergenceLimit"))
                 try:
                     sim.simulate()
                 except Exception as e:
@@ -121,7 +123,9 @@ class MainWindow(QMainWindow):
                 plot.clear()
                 self.graphedNodes = {n: [plot.plot(pen=(i, len(watchedNodes))), [[], []]] for i, n in
                                      enumerate(watchedNodes)}
-                self.current_simulation = TransientWorker(circuit, watchedNodes)
+                self.current_simulation = TransientWorker(circuit, watchedNodes, self.settings.get("convergenceLimit"),
+                                                          self.settings.get("timeBase"),
+                                                          self.settings.get("simulationFidelity"))
                 self.current_simulation.onStep.connect(self.checkTransientResults)
                 self.current_simulation.start()
                 self.setGraphVisible(True)
@@ -214,6 +218,12 @@ class MainWindow(QMainWindow):
 
         fileMenu.addSeparator()
 
+        settingsAction = QAction("Settings", menuBar)
+        settingsAction.triggered.connect(self.settings.displayDialog)
+        fileMenu.addAction(settingsAction)
+
+        fileMenu.addSeparator()
+
         closeAction = QAction("Quit", menuBar)
         closeAction.triggered.connect(self.close)
         closeAction.setShortcut(QKeySequence("Ctrl+Q"))
@@ -242,69 +252,13 @@ class MainWindow(QMainWindow):
         fileName = QFileDialog.getOpenFileName(self, "Open...", None, "Circuit Files (*.cir)",
                                                "Circuit Files (*.cir)")[0]
 
-        if fileName == "":
-            return
-
-        if not self.new():
+        if fileName == "" or not self.new():
             return
 
         with open(fileName, 'r') as fil:
             data = fil.read()
 
-        lines = data.split("\n")
-        nodeLine = lines[0]
-        componentLines = lines[1:]
-
-        nodeDict = {}
-        for componentLine in componentLines:
-            name, parameters, nodes, position = componentLine.split(":")
-
-            if name == "Wire":
-                newUberPath = UberPath()
-                points = [QPointF(float(x), float(y)) for x, y in [pair.split(",") for pair in position.split(";")]]
-                sourcePos = points[0]
-                targetPos = points[-1]
-                leftoverPoints = points[1:-1]
-
-                newUberPath.sourcePos = sourcePos
-                newUberPath.targetPos = targetPos
-
-                newUberPath.setPos(sourcePos)
-                newUberPath.addPoint(QPointF(0, 0))
-                # Position is the sequence of points here
-                [newUberPath.addPoint(point) for point in leftoverPoints]
-
-                newUberPath.editPoint(-1, targetPos - sourcePos)
-
-                newComponent = CircuitWire(newUberPath, self.next_id)
-            else:
-                x, y = position.split(",")
-                newComponent = COMPONENTS[name](self.next_id, float(x), float(y))
-
-                # If it has attributes...
-                if parameters != "":
-                    parameterDict = {parameter: newComponent.ATTRIBUTES[parameter][0](value)
-                                     for parameter, value in [pair.split("=") for pair in parameters.split(",")]}
-                    newComponent.attributes = parameterDict
-            self.next_id += 1
-
-            nodes = [int(node) for node in nodes.split(",")]
-            nodeDict.update({nodeIndex: nodeObject for nodeIndex, nodeObject in zip(nodes, newComponent.nodes)})
-
-            self.mscene.addItem(newComponent)
-
-        for nodeConnections in nodeLine.split(":"):
-            node, connects = nodeConnections.split("=")
-
-            # This node isn't connected to anything
-            if connects == "":
-                continue
-
-            nodeObject = nodeDict[int(node)]
-            connectObjects = [nodeDict[int(connect)] for connect in connects.split(',')]
-
-            for connectObject in connectObjects:
-                nodeObject.connect(connectObject)
+        self.next_id = persistence.load(self.mscene, data)
 
         self.currentFile = fileName
         self.statusBar().showMessage("File opened successfully.")
@@ -317,50 +271,7 @@ class MainWindow(QMainWindow):
         if self.currentFile is None:
             return self.saveAs()
 
-        components = list(filter(lambda item: isinstance(item, CircuitSymbol), self.mscene.items()))
-
-        nodes = [node for component in components for node in component.nodes]
-        acceptedConnections = []
-        nodeConnectionDict = {}
-        for node in nodes:
-            nodeIndex = nodes.index(node)
-            connectedNodeIndices = [nodes.index(conn) for conn in node.connected]
-
-            # Makes sure things are only connected once
-            acceptedNodeConnections = []
-            for connectedNodeIndex in connectedNodeIndices:
-                if (nodeConnectionDict.get(nodeIndex) is None or
-                        connectedNodeIndex not in nodeConnectionDict[nodeIndex]):
-                    acceptedNodeConnections.append(connectedNodeIndex)
-                    if nodeConnectionDict.get(connectedNodeIndex) is None:
-                        nodeConnectionDict[connectedNodeIndex] = [nodeIndex]
-                    else:
-                        nodeConnectionDict[connectedNodeIndex].append(nodeIndex)
-
-            acceptedConnections.append((nodeIndex, acceptedNodeConnections))
-
-        nodeString = ':'.join(f"{conn[0]}={','.join(str(cted) for cted in conn[1])}" for conn in acceptedConnections)
-
-        componentEntries = []
-        for component in components:
-
-            parameterString = ",".join(f"{parameter}={value}" for parameter, value in component.attributes.items())
-            ownedNodes = ",".join(str(nodes.index(node)) for node in component.nodes)
-
-            if component.NAME != "Wire":
-                position = component.scenePos()
-                positionString = f"{position.x()},{position.y()}"
-            else:
-                sourceString = f"{component.path.sourcePos.x()},{component.path.sourcePos.y()}"
-                targetString = f"{component.path.targetPos.x()},{component.path.targetPos.y()}"
-                positionString = sourceString + ';' + \
-                                 ";".join(f"{point.x()},{point.y()}" for point in
-                                          component.path._points) + ';' + targetString
-
-            componentEntries.append(f"{component.NAME}:{parameterString}:{ownedNodes}:{positionString}")
-
-        saveText = nodeString + "\n"
-        saveText += '\n'.join(componentEntries)
+        saveText = persistence.dump(self.mscene)
 
         try:
             with open(self.currentFile, 'w+') as fil:
