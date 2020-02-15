@@ -35,6 +35,7 @@ class Inductor:
         # Jacobian stuff for what it changes, using which inputs
         self.frontVoltageJacobianVoltageReference = None
         self.backVoltageJacobianVoltageReference = None
+        self.acrossVoltageByAcrossCurrentReference = None
         self.frontNodeJacobianCurrentReference = None
         self.backNodeJacobianCurrentReference = None
 
@@ -65,7 +66,7 @@ class Inductor:
         """
 
         frontNode, backNode = nodes
-        frontBackTuple = (frontNode, backNode)
+        frontBackTuple = (frontNode, backNode, self.identifier)
 
         self.currentThroughReference = circuit.getInputReference(frontBackTuple)
         self.frontVoltageReference = circuit.getInputReference(frontNode)
@@ -77,6 +78,7 @@ class Inductor:
 
         self.frontVoltageJacobianVoltageReference = circuit.getJacobianReference(frontBackTuple, frontNode)
         self.backVoltageJacobianVoltageReference = circuit.getJacobianReference(frontBackTuple, backNode)
+        self.acrossVoltageByAcrossCurrentReference = circuit.getJacobianReference(frontBackTuple, frontBackTuple)
         self.frontNodeJacobianCurrentReference = circuit.getJacobianReference(frontNode, frontBackTuple)
         self.backNodeJacobianCurrentReference = circuit.getJacobianReference(backNode, frontBackTuple)
 
@@ -103,6 +105,7 @@ class Inductor:
 
         self.frontVoltageJacobianVoltageReference += 1
         self.backVoltageJacobianVoltageReference -= 1
+        self.acrossVoltageByAcrossCurrentReference -= self.inductance / delta_t
         self.frontNodeJacobianCurrentReference += 1
         self.backNodeJacobianCurrentReference -= 1
 

@@ -236,6 +236,10 @@ class MainWindow(QMainWindow):
 
     def new(self):
         if self.saveCheck():
+            if self.current_simulation:
+                self.stopTransientSimulation()
+                self.current_simulation = None
+
             self.next_id = 0
             self.currentFile = None
             self.edited = False
