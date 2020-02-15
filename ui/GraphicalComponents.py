@@ -347,7 +347,7 @@ class GraphicalSwitch(CircuitSymbol):
 
     def __init__(self, uid, x=0, y=0):
         super().__init__(uid, x, y)
-        self.open = False
+        self.open = True
 
     def createNodes(self):
         return [CircuitNode(0, 10), CircuitNode(60, 10)]

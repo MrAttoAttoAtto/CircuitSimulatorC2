@@ -26,7 +26,7 @@ class MOSFET:
 
         self.thresholdVoltage = thresholdVoltage
 
-        self.currentFactor = (electronMobility * specificCapacitance)/2 * (width/length)
+        self.currentFactor = (electronMobility * specificCapacitance) / 2 * (width / length)
 
         self.gateVoltage = None
         self.sourceVoltage = None
@@ -119,8 +119,8 @@ class MOSFET:
 
         elif drainSourceVoltage < gateSourceVoltage - self.thresholdVoltage:
             # Linear region
-            current = self.currentFactor * (2*(gateSourceVoltage - self.thresholdVoltage)*drainSourceVoltage
-                                            - drainSourceVoltage**2)
+            current = self.currentFactor * (2 * (gateSourceVoltage - self.thresholdVoltage) * drainSourceVoltage
+                                            - drainSourceVoltage ** 2)
 
             gateConductance = self.currentFactor * 2 * (self.drainVoltage - self.sourceVoltage)
             sourceConductance = self.currentFactor * 2 * (self.sourceVoltage - self.gateVoltage)
@@ -136,7 +136,7 @@ class MOSFET:
             self.drainCurrentByDrainVoltage += drainConductance
         else:
             # Saturation region
-            current = self.currentFactor * (gateSourceVoltage - self.thresholdVoltage)**2
+            current = self.currentFactor * (gateSourceVoltage - self.thresholdVoltage) ** 2
 
             conductance = self.currentFactor * 2 * (gateSourceVoltage - self.thresholdVoltage)
 
@@ -151,5 +151,6 @@ class MOSFET:
 
     def stamp_transient(self, environment: Environment, delta_t: int):
         self.stamp_static(environment)
+
 
 Component.register(MOSFET)

@@ -9,6 +9,7 @@ class VoltageControlledVoltageSource:
     """
     An ideal voltage-controlled voltage source
     """
+
     def __init__(self, mu: float):
         """
         Makes the ideal VCVS, setting up all relevant values
@@ -116,6 +117,7 @@ class VoltageControlledVoltageSource:
 
     def stamp_transient(self, environment: Environment, delta_t: int):
         self.stamp_static(environment)
+
 
 Component.register(VoltageControlledVoltageSource)
 
