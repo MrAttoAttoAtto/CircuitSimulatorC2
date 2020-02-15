@@ -106,6 +106,9 @@ class MainWindow(QMainWindow):
                     errorBox.setIcon(QMessageBox.Warning)
 
                     errorBox.exec()
+
+                    self.runDynamicAction.setDisabled(False)
+                    self.runStaticAction.setDisabled(False)
                     return
 
                 self.nodes_valid_state = True
@@ -218,6 +221,18 @@ class MainWindow(QMainWindow):
         closeAction.triggered.connect(self.close)
         closeAction.setShortcut(QKeySequence("Ctrl+Q"))
         fileMenu.addAction(closeAction)
+
+        editMenu = menuBar.addMenu("Edit")
+
+        rotateRightAction = QAction("Rotate Right", menuBar)
+        rotateRightAction.triggered.connect(self.mscene.rotateSelected)
+        rotateRightAction.setShortcut(QKeySequence("Ctrl+R"))
+        editMenu.addAction(rotateRightAction)
+
+        rotateLeftAction = QAction("Rotate Left", menuBar)
+        rotateLeftAction.triggered.connect(lambda: self.mscene.rotateSelected(True))
+        rotateLeftAction.setShortcut(QKeySequence("Ctrl+L"))
+        editMenu.addAction(rotateLeftAction)
 
     def setEdited(self):
         self.edited = True

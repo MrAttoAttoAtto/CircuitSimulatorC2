@@ -7,6 +7,7 @@ from components.ACVoltageSource import ACVoltageSource
 from components.Capacitor import Capacitor
 from components.Diode import Diode
 from components.Inductor import Inductor
+from components.MOSFET import MOSFET
 from components.Resistor import Resistor
 from components.Switch import Switch
 from components.VoltageSource import VoltageSource
@@ -143,15 +144,15 @@ class GraphicalResistor(CircuitSymbol):
     DEFAULT_ATTRIBUTES = {'resistance': 1.0}
 
     def createNodes(self):
-        return [CircuitNode(10, 0), CircuitNode(10, 100)]
+        return [CircuitNode(10, 0), CircuitNode(10, 80)]
 
     def createDecor(self):
-        return [QGraphicsRectItem(0, 20, 20, 60),
+        return [QGraphicsRectItem(5, 20, 10, 40),
                 QGraphicsLineItem(10, 0, 10, 20),
-                QGraphicsLineItem(10, 80, 10, 100)]
+                QGraphicsLineItem(10, 60, 10, 80)]
 
     def boundingRect(self):
-        return QRectF(0, 0, 20, 100)
+        return QRectF(5, 0, 10, 80)
 
     def addToCircuit(self, circuit: Circuit):
         res = Resistor(**self.attributes)
@@ -206,7 +207,7 @@ class GraphicalInductor(CircuitSymbol):
                 QGraphicsLineItem(10, 50, 10, 60)]
 
     def boundingRect(self):
-        return QRectF(0, 0, 20, 60)
+        return QRectF(5, 0, 20, 60)
 
     def addToCircuit(self, circuit: Circuit):
         ind = Inductor(**self.attributes)
@@ -232,7 +233,7 @@ class GraphicalVoltageSource(CircuitSymbol):
                 QGraphicsLineItem(10, 50, 10, 70)]
 
     def boundingRect(self):
-        return QRectF(0, 0, 20, 70)
+        return QRectF(-5, 0, 35, 70)
 
     def addToCircuit(self, circuit: Circuit):
         pwr = VoltageSource(**self.attributes)
@@ -263,7 +264,7 @@ class GraphicalACVoltageSource(CircuitSymbol):
                 QGraphicsLineItem(10, 50, 10, 70)]
 
     def boundingRect(self):
-        return QRectF(0, 0, 20, 70)
+        return QRectF(-5, 0, 35, 70)
 
     def addToCircuit(self, circuit: Circuit):
         pwr = ACVoltageSource(**self.attributes)
@@ -299,46 +300,44 @@ class GraphicalDiode(CircuitSymbol):
         circuit.add(diode, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
-class GraphicalGround(CircuitSymbol):
-    NAME = "Ground"
-    ATTRIBUTES = {}
-    DEFAULT_ATTRIBUTES = {}
+class GraphicalMOSFET(CircuitSymbol):
+    NAME = "MOSFET"
+    ATTRIBUTES = {'thresholdVoltage': [float, "Threshold Voltage", "V", "Volts"],
+                  'width': [float, "Width", "m", "Metres"],
+                  'length': [float, "Length", "m", "Metres"],
+                  'specificCapacitance': [float, "Specific Capacitance", "F/m^2", "Farads per metre squared"],
+                  'electronMobility': [float, "Electron Mobility", "m^2/(Vs)", "Metres squared per volt-second"]}
+    DEFAULT_ATTRIBUTES = {'thresholdVoltage': 3.0,
+                          'width': 1e-6,
+                          'length': 1e-9,
+                          "specificCapacitance": 1e-2,
+                          "electronMobility": 500e-4}
 
     def createNodes(self):
-        return [CircuitNode(10, 0)]
+        # Gate, source, drain
+        return [CircuitNode(0, 40), CircuitNode(30, 50), CircuitNode(30, 0)]
 
     def createDecor(self):
-        return [QGraphicsLineItem(10, 0, 10, 20),
-                QGraphicsLineItem(-10, 20, 30, 20),
-                QGraphicsLineItem(-3, 25, 23, 25),
-                QGraphicsLineItem(4, 30, 16, 30)]
+        triangle = QPolygonF([QPointF(20, 25), QPointF(27, 25 + 7 / (3 ** 0.5)), QPointF(27, 25 - 7 / (3 ** 0.5))])
+        return [QGraphicsLineItem(0, 40, 15, 40),
+                QGraphicsLineItem(15, 40, 15, 10),
+                QGraphicsLineItem(20, 42, 20, 35 + 1 / 3),
+                QGraphicsLineItem(20, 28 + 1 / 3, 20, 21 + 2 / 3),
+                QGraphicsLineItem(20, 14 + 2 / 3, 20, 8),
+                QGraphicsLineItem(30, 50, 30, 25),
+                QGraphicsLineItem(30, 38 + 2 / 3, 20, 38 + 2 / 3),
+                QGraphicsLineItem(30, 25, 27, 25),
+                QGraphicsLineItem(30, 0, 30, 11 + 1 / 3),
+                QGraphicsLineItem(30, 11 + 1 / 3, 20, 11 + 1 / 3),
+                QGraphicsPolygonItem(triangle)]
 
     def boundingRect(self):
-        return QRectF(-10, 0, 30, 30)
+        return QRectF(0, 0, 30, 50)
 
     def addToCircuit(self, circuit: Circuit):
-        pass
-
-
-class GraphicalTestPoint(CircuitSymbol):
-    NAME = "Test Point"
-    ATTRIBUTES = {}
-    DEFAULT_ATTRIBUTES = {}
-
-    def createNodes(self):
-        return [CircuitNode(0, 30)]
-
-    def createDecor(self):
-        return [QGraphicsLineItem(0, 30, 15, 15),
-                QGraphicsLineItem(10, 10, 20, 20),
-                QGraphicsLineItem(10, 10, 30, 0),
-                QGraphicsLineItem(20, 20, 30, 0)]
-
-    def boundingRect(self):
-        return QRectF(0, 0, 30, 30)
-
-    def addToCircuit(self, circuit: Circuit):
-        pass
+        mosfet = MOSFET(**self.attributes)
+        mosfet._patched_id = self.uid
+        circuit.add(mosfet, (self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node))
 
 
 class GraphicalSwitch(CircuitSymbol):
@@ -379,6 +378,48 @@ class GraphicalSwitch(CircuitSymbol):
         circuit.add(switch, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
+class GraphicalGround(CircuitSymbol):
+    NAME = "Ground"
+    ATTRIBUTES = {}
+    DEFAULT_ATTRIBUTES = {}
+
+    def createNodes(self):
+        return [CircuitNode(10, 0)]
+
+    def createDecor(self):
+        return [QGraphicsLineItem(10, 0, 10, 20),
+                QGraphicsLineItem(-10, 20, 30, 20),
+                QGraphicsLineItem(-3, 25, 23, 25),
+                QGraphicsLineItem(4, 30, 16, 30)]
+
+    def boundingRect(self):
+        return QRectF(-10, 0, 40, 30)
+
+    def addToCircuit(self, circuit: Circuit):
+        pass
+
+
+class GraphicalTestPoint(CircuitSymbol):
+    NAME = "Test Point"
+    ATTRIBUTES = {}
+    DEFAULT_ATTRIBUTES = {}
+
+    def createNodes(self):
+        return [CircuitNode(0, 30)]
+
+    def createDecor(self):
+        return [QGraphicsLineItem(0, 30, 15, 15),
+                QGraphicsLineItem(10, 10, 20, 20),
+                QGraphicsLineItem(10, 10, 30, 0),
+                QGraphicsLineItem(20, 20, 30, 0)]
+
+    def boundingRect(self):
+        return QRectF(0, 0, 30, 30)
+
+    def addToCircuit(self, circuit: Circuit):
+        pass
+
+
 COMPONENTS = {"Resistor": GraphicalResistor,
               "Capacitor": GraphicalCapacitor,
               "Inductor": GraphicalInductor,
@@ -386,5 +427,6 @@ COMPONENTS = {"Resistor": GraphicalResistor,
               "Voltage Source": GraphicalVoltageSource,
               "AC Voltage Source": GraphicalACVoltageSource,
               "Diode": GraphicalDiode,
-              "Test Point": GraphicalTestPoint,
-              "Switch": GraphicalSwitch}
+              "MOSFET": GraphicalMOSFET,
+              "Switch": GraphicalSwitch,
+              "Test Point": GraphicalTestPoint}
