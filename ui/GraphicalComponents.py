@@ -4,7 +4,9 @@ from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QDialogButt
     QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem, QGraphicsPathItem
 
 from components.ACVoltageSource import ACVoltageSource
+from components.Capacitor import Capacitor
 from components.Diode import Diode
+from components.Inductor import Inductor
 from components.Resistor import Resistor
 from components.Switch import Switch
 from components.VoltageSource import VoltageSource
@@ -155,6 +157,61 @@ class GraphicalResistor(CircuitSymbol):
         res = Resistor(**self.attributes)
         res._patched_id = self.uid
         circuit.add(res, (self.nodes[0].actual_node, self.nodes[1].actual_node))
+
+
+class GraphicalCapacitor(CircuitSymbol):
+    NAME = "Capacitor"
+    # Type then display name then unit then unit tooltip
+    ATTRIBUTES = {'capacitance': [float, "Capacitance", "F", "Farads"]}
+    DEFAULT_ATTRIBUTES = {'capacitance': 1.0}
+
+    def createNodes(self):
+        return [CircuitNode(10, 0), CircuitNode(10, 50)]
+
+    def createDecor(self):
+        return [QGraphicsLineItem(0, 20, 20, 20),
+                QGraphicsLineItem(0, 30, 20, 30),
+                QGraphicsLineItem(10, 0, 10, 20),
+                QGraphicsLineItem(10, 30, 10, 50)]
+
+    def boundingRect(self):
+        return QRectF(0, 0, 20, 50)
+
+    def addToCircuit(self, circuit: Circuit):
+        cap = Capacitor(**self.attributes)
+        cap._patched_id = self.uid
+        circuit.add(cap, (self.nodes[0].actual_node, self.nodes[1].actual_node))
+
+
+class GraphicalInductor(CircuitSymbol):
+    NAME = "Inductor"
+    # Type then display name then unit then unit tooltip
+    ATTRIBUTES = {'inductance': [float, "Inductance", "H", "Henrys"]}
+    DEFAULT_ATTRIBUTES = {'inductance': 1.0}
+
+    def createNodes(self):
+        return [CircuitNode(10, 0), CircuitNode(10, 60)]
+
+    def createDecor(self):
+        curve = QPainterPath()
+        curve.moveTo(10, 10)
+        curve.arcTo(QRectF(5, 10, 10, 10), 90, -180)
+        curve.arcTo(QRectF(5, 20, 10, 10), 90, -180)
+        curve.arcTo(QRectF(5, 30, 10, 10), 90, -180)
+        curve.arcTo(QRectF(5, 40, 10, 10), 90, -180)
+        bumps = QGraphicsPathItem()
+        bumps.setPath(curve)
+        return [bumps,
+                QGraphicsLineItem(10, 0, 10, 10),
+                QGraphicsLineItem(10, 50, 10, 60)]
+
+    def boundingRect(self):
+        return QRectF(0, 0, 20, 60)
+
+    def addToCircuit(self, circuit: Circuit):
+        ind = Inductor(**self.attributes)
+        ind._patched_id = self.uid
+        circuit.add(ind, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
 class GraphicalVoltageSource(CircuitSymbol):
@@ -323,6 +380,8 @@ class GraphicalSwitch(CircuitSymbol):
 
 
 COMPONENTS = {"Resistor": GraphicalResistor,
+              "Capacitor": GraphicalCapacitor,
+              "Inductor": GraphicalInductor,
               "Ground": GraphicalGround,
               "Voltage Source": GraphicalVoltageSource,
               "AC Voltage Source": GraphicalACVoltageSource,
