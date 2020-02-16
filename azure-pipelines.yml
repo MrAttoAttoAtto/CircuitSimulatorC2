@@ -1,0 +1,31 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+strategy:
+  matrix:
+    mac:
+      imageName: 'macos-10.15'
+    #windows:
+    #  imageName: 'vs2017-win2016'
+
+pool:
+  vmImage: $(imageName)
+
+steps:
+# macOS
+- bash: |
+    pip3 install -r requirements.txt
+    pip3 install py2app
+    python3 setupmac.py py2app
+    mkdir bin
+    hdiutil create -volname "Circuit Simulator C2" -srcfolder ./dist -ov -format UDZO ./bin/CircuitSimulatorC2.dmg
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: Builds app on macOS
+
+- publish: ./bin/CircuitSimulatorC2.dmg
+  artifact: CircuitSimulatorC2.dmg
