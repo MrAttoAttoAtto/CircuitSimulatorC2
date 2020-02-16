@@ -2,7 +2,7 @@ from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker, QPainterPath, QFont
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QDialogButtonBox, QMessageBox, QGraphicsItem, \
     QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem, QGraphicsPathItem, \
-    QGraphicsTextItem, QGraphicsSimpleTextItem
+    QGraphicsSimpleTextItem
 
 from components.ACVoltageSource import ACVoltageSource
 from components.Capacitor import Capacitor
@@ -421,6 +421,7 @@ class GraphicalSwitch(CircuitSymbol):
         switch._patched_id = self.uid
         circuit.add(switch, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
+
 @CircuitComponent
 class GraphicalMOSFET(CircuitSymbol):
     PREFIX = "Q"
@@ -461,6 +462,7 @@ class GraphicalMOSFET(CircuitSymbol):
         mosfet = MOSFET(self.attributes["thresholdVoltage"], self.attributes["width"], self.attributes["length"], self.attributes["specificCapacitance"], self.attributes["electronMobility"])
         mosfet._patched_id = self.uid
         circuit.add(mosfet, (self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node))
+
 
 @CircuitComponent
 class GraphicalVCVS(CircuitSymbol):
@@ -521,7 +523,7 @@ class GraphicalAmmeter(CircuitSymbol):
                 QGraphicsLineItem(10, 0, 10, 20)]
 
     def boundingRect(self):
-        return QRectF(0, 0, 70, 20)
+        return QRectF(-5, 0, 30, 70)
 
     def addToCircuit(self, circuit: Circuit):
         meter = VoltageSource(0)
@@ -568,4 +570,5 @@ COMPONENTS = {"Resistor": GraphicalResistor,
               "VCVS": GraphicalVCVS,
               "Switch": GraphicalSwitch,
               "Test Point": GraphicalTestPoint,
-              "Ammeter": GraphicalAmmeter}
+              "Ammeter": GraphicalAmmeter,
+              "Voltmeter": GraphicalVoltmeter}
