@@ -179,6 +179,7 @@ class MainWindow(QMainWindow):
             c = component_class(self.next_id, 0, 0)
             self.next_id += 1
             self.mscene.addItem(c)
+            c.populateName(self.mscene.componentNames)
             self.setEdited()
 
         return addComponent
@@ -272,6 +273,7 @@ class MainWindow(QMainWindow):
             self.edited = False
 
             self.mscene.clear()
+            self.mscene.componentNames = set()
 
             self.setWindowTitle("Circuit Simulator")
 

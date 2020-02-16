@@ -1,7 +1,8 @@
 from PyQt5.QtCore import Qt, QRectF, QPointF
-from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker, QPainterPath
+from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker, QPainterPath, QFont
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QDialogButtonBox, QMessageBox, QGraphicsItem, \
-    QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem, QGraphicsPathItem
+    QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem, QGraphicsPathItem, \
+    QGraphicsTextItem, QGraphicsSimpleTextItem
 
 from components.ACVoltageSource import ACVoltageSource
 from components.Capacitor import Capacitor
@@ -16,9 +17,10 @@ from ui.visuals import CircuitItem, CircuitNode
 
 
 class CircuitSymbol(CircuitItem):
+    PREFIX = ""
     NAME = ""
-    ATTRIBUTES = {}
-    DEFAULT_ATTRIBUTES = {}
+    ATTRIBUTES = {"name": [str, "Component Name", "", ""]}
+    DEFAULT_ATTRIBUTES = {"name": ""}
 
     def __init__(self, uid, x=0, y=0):
         super().__init__()
@@ -36,6 +38,18 @@ class CircuitSymbol(CircuitItem):
 
         self.setPos(x, y)
         self.setAcceptHoverEvents(True)
+
+    def populateName(self, componentNames: set):
+        """Generates the name of the component if necessary, and adds it to the componentNames set."""
+        if self.attributes["name"] == "":
+            i = 1
+            while f"{self.PREFIX}{i}" in componentNames:
+                i += 1
+            self.attributes["name"] = f"{self.PREFIX}{i}"
+        if self.attributes["name"] in componentNames:
+            raise ValueError("Component Name {} already exists.".format(self.attributes["name"]))
+        else:
+            componentNames.add(self.attributes["name"])
 
     def mouseDoubleClickEvent(self, QGraphicsSceneMouseEvent):
         if len(self.attributes) == 0:
@@ -109,10 +123,18 @@ class CircuitSymbol(CircuitItem):
         pass
 
 
+def CircuitComponent(cls):
+    cls.ATTRIBUTES.update(cls.__mro__[1].ATTRIBUTES)
+    cls.DEFAULT_ATTRIBUTES.update(cls.__mro__[1].DEFAULT_ATTRIBUTES)
+    return cls
+
+
+@CircuitComponent
 class CircuitWire(CircuitSymbol):
+    PREFIX = "W"
     NAME = "Wire"
-    ATTRIBUTES = {"caption": (str, "Caption", "", "")}
-    DEFAULT_ATTRIBUTES = {"caption": ""}
+    ATTRIBUTES = {}
+    DEFAULT_ATTRIBUTES = {}
 
     def createNodes(self):
         return [CircuitNode(),
@@ -136,7 +158,9 @@ class CircuitWire(CircuitSymbol):
         return s.createStroke(self.path.path())
 
 
+@CircuitComponent
 class GraphicalResistor(CircuitSymbol):
+    PREFIX = "R"
     NAME = "Resistor"
     # Type then display name then unit then unit tooltip
     ATTRIBUTES = {'resistance': [float, "Resistance", "Ω", "Ohms"]}
@@ -154,12 +178,14 @@ class GraphicalResistor(CircuitSymbol):
         return QRectF(0, 0, 20, 100)
 
     def addToCircuit(self, circuit: Circuit):
-        res = Resistor(**self.attributes)
+        res = Resistor(resistance=self.attributes["resistance"])
         res._patched_id = self.uid
         circuit.add(res, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
+@CircuitComponent
 class GraphicalCapacitor(CircuitSymbol):
+    PREFIX = "C"
     NAME = "Capacitor"
     # Type then display name then unit then unit tooltip
     ATTRIBUTES = {'capacitance': [float, "Capacitance", "F", "Farads"]}
@@ -183,7 +209,9 @@ class GraphicalCapacitor(CircuitSymbol):
         circuit.add(cap, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
+@CircuitComponent
 class GraphicalInductor(CircuitSymbol):
+    PREFIX = "L"
     NAME = "Inductor"
     # Type then display name then unit then unit tooltip
     ATTRIBUTES = {'inductance': [float, "Inductance", "H", "Henrys"]}
@@ -209,12 +237,14 @@ class GraphicalInductor(CircuitSymbol):
         return QRectF(0, 0, 20, 60)
 
     def addToCircuit(self, circuit: Circuit):
-        ind = Inductor(**self.attributes)
+        ind = Inductor(inductance=self.attributes["inductance"])
         ind._patched_id = self.uid
         circuit.add(ind, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
+@CircuitComponent
 class GraphicalVoltageSource(CircuitSymbol):
+    PREFIX = "VS"
     NAME = "Voltage Source"
     # Type then display name then unit then unit tooltip
     ATTRIBUTES = {'voltage': [float, "Voltage", "V", "Volts"]}
@@ -235,12 +265,14 @@ class GraphicalVoltageSource(CircuitSymbol):
         return QRectF(0, 0, 20, 70)
 
     def addToCircuit(self, circuit: Circuit):
-        pwr = VoltageSource(**self.attributes)
+        pwr = VoltageSource(self.attributes["voltage"])
         pwr._patched_id = self.uid
         circuit.add(pwr, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
+@CircuitComponent
 class GraphicalACVoltageSource(CircuitSymbol):
+    PREFIX = "VS"
     NAME = "AC Voltage Source"
     # Type then display name then unit then unit tooltip
     ATTRIBUTES = {'peakVoltage': [float, "Peak Voltage", "V", "Volts"],
@@ -266,12 +298,14 @@ class GraphicalACVoltageSource(CircuitSymbol):
         return QRectF(0, 0, 20, 70)
 
     def addToCircuit(self, circuit: Circuit):
-        pwr = ACVoltageSource(**self.attributes)
+        pwr = ACVoltageSource(self.attributes["peakVoltage"], self.attributes["frequency"])
         pwr._patched_id = self.uid
         circuit.add(pwr, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
+@CircuitComponent
 class GraphicalDiode(CircuitSymbol):
+    PREFIX = "D"
     NAME = "Diode"
     ATTRIBUTES = {'breakdownVoltage': [float, "Breakdown Voltage", "V", "Volts"],
                   'saturationCurrent': [float, "Saturation Current", "A", "Amps"],
@@ -294,12 +328,15 @@ class GraphicalDiode(CircuitSymbol):
         return QRectF(0, 0, 20, 40)
 
     def addToCircuit(self, circuit: Circuit):
-        diode = Diode(**self.attributes)
+        diode = Diode(self.attributes["breakdownVoltage"], self.attributes["saturationCurrent"],
+                      self.attributes["ideality"])
         diode._patched_id = self.uid
         circuit.add(diode, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
+@CircuitComponent
 class GraphicalGround(CircuitSymbol):
+    PREFIX = "G"
     NAME = "Ground"
     ATTRIBUTES = {}
     DEFAULT_ATTRIBUTES = {}
@@ -320,10 +357,18 @@ class GraphicalGround(CircuitSymbol):
         pass
 
 
+@CircuitComponent
 class GraphicalTestPoint(CircuitSymbol):
+    PREFIX = "V"
     NAME = "Test Point"
-    ATTRIBUTES = {}
+    ATTRIBUTES = {"name": [str, "Component Name", "", ""]}
     DEFAULT_ATTRIBUTES = {}
+
+    def __init__(self, uid, x=0, y=0, scene: 'CircuitScene' = None):
+        super().__init__(uid, x, y)
+        if scene is not None:
+            scene.voltmeterCount += 1
+            self.attributes["name"] = "V" + str(scene.voltmeterCount)
 
     def createNodes(self):
         return [CircuitNode(0, 30)]
@@ -341,7 +386,9 @@ class GraphicalTestPoint(CircuitSymbol):
         pass
 
 
+@CircuitComponent
 class GraphicalSwitch(CircuitSymbol):
+    PREFIX = "S"
     NAME = "Switch"
     ATTRIBUTES = {}
     DEFAULT_ATTRIBUTES = {}
@@ -379,6 +426,64 @@ class GraphicalSwitch(CircuitSymbol):
         circuit.add(switch, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
 
+@CircuitComponent
+class GraphicalAmmeter(CircuitSymbol):
+    PREFIX = "I"
+    NAME = "Ammeter"
+    ATTRIBUTES = {"name": [str, "Component Name", "", ""]}
+    DEFAULT_ATTRIBUTES = {}
+
+    def createNodes(self):
+        return [CircuitNode(10, 0), CircuitNode(10, 70)]
+
+    def createDecor(self):
+        font = QFont("Helvetica", 8, QFont.Thin)
+        text = QGraphicsSimpleTextItem("A")
+        text.setFont(font)
+        text.setPos(10 - text.boundingRect().width() / 2, 34.5 - text.boundingRect().height() / 2)
+
+        return [QGraphicsEllipseItem(-5, 20, 30, 30),
+                text,
+                QGraphicsLineItem(10, 50, 10, 70),
+                QGraphicsLineItem(10, 0, 10, 20)]
+
+    def boundingRect(self):
+        return QRectF(0, 0, 70, 20)
+
+    def addToCircuit(self, circuit: Circuit):
+        meter = VoltageSource(0)
+        meter._patched_id = self.uid
+        circuit.add(meter, (self.nodes[0].actual_node, self.nodes[1].actual_node))
+
+
+@CircuitComponent
+class GraphicalVoltmeter(CircuitSymbol):
+    PREFIX = "V"
+    NAME = "Voltmeter"
+    ATTRIBUTES = {"name": [str, "Component Name", "", ""]}
+    DEFAULT_ATTRIBUTES = {}
+
+    def createNodes(self):
+        return [CircuitNode(10, 0), CircuitNode(10, 70)]
+
+    def createDecor(self):
+        font = QFont("Helvetica", 8, QFont.Thin)
+        text = QGraphicsSimpleTextItem("V")
+        text.setFont(font)
+        text.setPos(10 - text.boundingRect().width() / 2, 34.5 - text.boundingRect().height() / 2)
+
+        return [QGraphicsEllipseItem(-5, 20, 30, 30),
+                text,
+                QGraphicsLineItem(10, 50, 10, 70),
+                QGraphicsLineItem(10, 0, 10, 20)]
+
+    def boundingRect(self):
+        return QRectF(0, 0, 20, 70)
+
+    def addToCircuit(self, circuit: Circuit):
+        pass
+
+
 COMPONENTS = {"Resistor": GraphicalResistor,
               "Capacitor": GraphicalCapacitor,
               "Inductor": GraphicalInductor,
@@ -387,4 +492,5 @@ COMPONENTS = {"Resistor": GraphicalResistor,
               "AC Voltage Source": GraphicalACVoltageSource,
               "Diode": GraphicalDiode,
               "Test Point": GraphicalTestPoint,
-              "Switch": GraphicalSwitch}
+              "Switch": GraphicalSwitch,
+              "Ammeter": GraphicalAmmeter}

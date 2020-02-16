@@ -12,6 +12,7 @@ class CircuitScene(QGraphicsScene):
         self._wire_spawn = None
         self._wire_spawn_source = None
         self.grid_resolution = 10
+        self.componentNames = set()
 
     def wireCreationEvent(self, source):
         if self._wire_spawn is None:

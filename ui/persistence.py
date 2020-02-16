@@ -110,10 +110,13 @@ def load(scene: CircuitScene, data: str):
                                  for parameter, value in [pair.split("=") for pair in parameters.split(",")]}
                 newComponent.attributes = parameterDict
         next_id += 1
-
         nodes = [int(node) for node in nodes.split(",")]
         nodeDict.update({nodeIndex: nodeObject for nodeIndex, nodeObject in zip(nodes, newComponent.nodes)})
-
+        # Begin Patch
+        if "name" not in newComponent.attributes:
+            newComponent.attributes["name"] = ""
+        # End Patch
+        newComponent.populateName(scene.componentNames)
         scene.addItem(newComponent)
 
     for nodeConnections in nodeLine.split(":"):
