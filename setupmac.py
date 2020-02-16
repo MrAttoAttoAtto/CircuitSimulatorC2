@@ -13,11 +13,13 @@ sys.setrecursionlimit(2000)
 
 APP = ['uimain.py']
 DATA_FILES = []
-OPTIONS = {'packages': ['PyQt5', 'numpy', 'scipy', 'pyqtgraph', 'matplotlib']}
+OPTIONS = {'packages': ['PyQt5', 'numpy', 'scipy', 'pyqtgraph', 'matplotlib'],
+           'iconfile': 'Icons/icon.icns'}
 
 setup(
     app=APP,
     data_files=DATA_FILES,
+    name='Circuit Simulator C2',
     options={'py2app': OPTIONS},
     setup_requires=['py2app'],
 )
