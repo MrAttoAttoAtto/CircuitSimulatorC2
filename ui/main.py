@@ -13,6 +13,7 @@ from general.Simulation import StaticSimulation
 from ui import persistence
 from ui.CircuitScene import CircuitScene
 from ui.GraphicalComponents import GraphicalGround, COMPONENTS, CircuitSymbol, CircuitWire, GraphicalTestPoint
+from ui.ResultsView import ResultsView
 from ui.SimulationWorker import TransientWorker
 from ui.persistence import ProgramSettings
 from ui.utils import follow_duplications
@@ -30,7 +31,6 @@ class MainWindow(QMainWindow):
 
         self.settings = ProgramSettings()
 
-        self.nodes_valid_state = False
         self.current_simulation = None
         self.splitter = QSplitter(Qt.Vertical, self)
         self.mscene = CircuitScene(self)
@@ -39,9 +39,9 @@ class MainWindow(QMainWindow):
         self.mview.setDragMode(QGraphicsView.RubberBandDrag)
         self.splitter.addWidget(self.mview)
         pg.setConfigOption("foreground", 'k')
-        self.graphView = PlotWidget(background='w')
-        self.splitter.addWidget(self.graphView)
-        self.setGraphVisible(False)
+        self.resultsView = ResultsView()
+        self.splitter.addWidget(self.resultsView)
+        self.setResultsVisible(False)
 
         self.setCentralWidget(self.splitter)
         self.createActions()
@@ -116,30 +116,23 @@ class MainWindow(QMainWindow):
                     self.runStaticAction.setDisabled(False)
                     return
 
-                self.nodes_valid_state = True
-                for p in filter(lambda c: isinstance(c, GraphicalTestPoint), self.mscene.items()):
-                    print(p.nodes[0].actual_node, circuit.getInputReference(p.nodes[0].actual_node))
+                self.resultsView.displayStaticData(circuit, components)
+                self.setResultsVisible(True)
                 self.runDynamicAction.setDisabled(False)
                 self.runStaticAction.setDisabled(False)
             else:
                 # Dynamic
-                watchedNodes = [p.nodes[0].actual_node for p in
-                                filter(lambda c: isinstance(c, GraphicalTestPoint), self.mscene.items())]
-                plot = self.graphView.getPlotItem()
-                plot.clear()
-                self.maxGraphSteps = self.settings.get("graphTimeRange") // self.settings.get("simulationFidelity")
-                self.graphedTime = []
-                self.graphedNodes = {n: [plot.plot(pen=pg.mkPen(color=(i, len(watchedNodes)), width=2)), []] for i, n in
-                                     enumerate(watchedNodes)}
-                self.current_simulation = TransientWorker(circuit, watchedNodes, self.settings.get("convergenceLimit"),
+                maxGraphSteps = self.settings.get("graphTimeRange") // self.settings.get("simulationFidelity")
+                (watchedNodes, watchedCurrents) = self.resultsView.prepareTransient(circuit, components, maxGraphSteps)
+
+                self.current_simulation = TransientWorker(circuit, watchedNodes, watchedCurrents, self.settings.get("convergenceLimit"),
                                                           self.settings.get("timeBase"),
                                                           self.settings.get("simulationFidelity"))
 
-                self.current_simulation.onStep.connect(self.checkTransientResults)
+                self.current_simulation.onStep.connect(self.resultsView.updateTransientData)
                 self.current_simulation.onError.connect(self.onSimulationError)
                 self.current_simulation.start()
-                self.setGraphVisible(True)
-                self.nodes_valid_state = False
+                self.setResultsVisible(True)
                 self.stopDynamicAction.setDisabled(False)
 
     def onSimulationError(self, e: Exception):
@@ -158,18 +151,7 @@ class MainWindow(QMainWindow):
         errorBox.exec()
 
     def checkTransientResults(self, result):
-        self.nodes_valid_state = True
-        # Add time
-        self.graphedTime.append(result[0])
-        # Really inefficient?
-        if len(self.graphedTime) > self.maxGraphSteps:
-            self.graphedTime.pop(0)
-        for node in self.graphedNodes.keys():
-            # Update data
-            self.graphedNodes[node][1].append(result[1][node])
-            if len(self.graphedNodes[node][1]) > self.maxGraphSteps:
-                self.graphedNodes[node][1].pop(0)
-            self.graphedNodes[node][0].setData(self.graphedTime, self.graphedNodes[node][1])
+        self.resultsView.updateTransientData(result)
 
     def stopTransientSimulation(self):
         self.current_simulation.halt()
@@ -192,7 +174,7 @@ class MainWindow(QMainWindow):
         if self.current_simulation:
             self.current_simulation.notifySwitchStateChanged(newState, uid)
 
-    def setGraphVisible(self, visible: bool = True):
+    def setResultsVisible(self, visible: bool = True):
         h = self.splitter.geometry().height()
         if visible:
             # Dont adjust if already custom

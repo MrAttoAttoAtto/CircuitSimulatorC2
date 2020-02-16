@@ -13,10 +13,15 @@ class WorkerMessage(Enum):
     SWITCH_STATE_CHANGE = 2
 
 
-def _transient_simulate(circuit: Circuit, watchedNodes: [int], outQueue: multiprocessing.Queue,
+def _transient_simulate(circuit: Circuit, watchedNodes: [int], watchedVoltageSourceIDs: [int],
+                        outQueue: multiprocessing.Queue,
                         inQueue: multiprocessing.Queue, delta_t: float, convergenceLimit: int, resultInterval: float):
     sim = TransientSimulation(circuit, convergenceLimit, delta_t)
-    watchedRefs = {n: circuit.getInputReference(n) for n in watchedNodes}
+    watchedVoltageRefs = {n: circuit.getInputReference(n) for n in watchedNodes}
+    watchedCurrentRefs = {}
+    for c in circuit.components:
+        if c._patched_id in watchedVoltageSourceIDs:
+            watchedCurrentRefs[c._patched_id] = c.currentThroughReference
     resultIntervalCount = resultInterval // delta_t
     i = 0
     try:
@@ -30,8 +35,11 @@ def _transient_simulate(circuit: Circuit, watchedNodes: [int], outQueue: multipr
                         break
                     else:
                         if w[0] == WorkerMessage.CHANGE_WATCHED:
-                            watchedNodes = w[1]
-                            watchedRefs = {n: circuit.getInputReference(n) for n in w}
+                            watchedVoltageRefs = {n: circuit.getInputReference(n) for n in w[1]}
+                            watchedCurrentRefs = {}
+                            for c in circuit.components:
+                                if c._patched_id in w[2]:
+                                    watchedCurrentRefs[c._patched_id] = c.currentThroughReference
                         elif w[0] == WorkerMessage.SWITCH_STATE_CHANGE:
                             for c in circuit.components:
                                 if c._patched_id == w[1]:
@@ -42,7 +50,8 @@ def _transient_simulate(circuit: Circuit, watchedNodes: [int], outQueue: multipr
                 except queue.Empty:
                     pass
                 # Send updated values
-                outQueue.put((circuit.environment.time, {n: ref.value for (n, ref) in watchedRefs.items()}))
+                outQueue.put((circuit.environment.time, {n: ref.value for (n, ref) in watchedVoltageRefs.items()},
+                              {uid: ref.value for (uid, ref) in watchedCurrentRefs.items()}))
                 i = 0
             i += 1
             # Simulate a step
@@ -55,20 +64,22 @@ class TransientWorker(QObject):
     onStep = pyqtSignal(object)
     onError = pyqtSignal(object)
 
-    def __init__(self, circuit: Circuit, watchedNodes: [int], convergenceLimit: int, delta_t: float, resultInterval: float):
+    def __init__(self, circuit: Circuit, watchedNodes: [int], watchedVoltageSourceIDs: [int], convergenceLimit: int, delta_t: float,
+                 resultInterval: float):
         super().__init__()
         self.watchedNodes = watchedNodes
         self.resultsQueue = multiprocessing.Queue()
         self.commandQueue = multiprocessing.Queue()
 
-        self.timerPeriod = int((resultInterval/delta_t) * (10*0.00001/0.001))
+        self.timerPeriod = int((resultInterval / delta_t) * (10 * 0.00001 / 0.001))
 
         self.checkTimer = QTimer()
         self.checkTimer.timeout.connect(self._periodicCheck)
 
         self._process = multiprocessing.Process(target=_transient_simulate,
                                                 args=(
-                                                    circuit, watchedNodes, self.resultsQueue, self.commandQueue, delta_t, convergenceLimit, resultInterval),
+                                                    circuit, watchedNodes, watchedVoltageSourceIDs, self.resultsQueue, self.commandQueue,
+                                                    delta_t, convergenceLimit, resultInterval),
                                                 daemon=True)
 
     def start(self):
@@ -76,8 +87,8 @@ class TransientWorker(QObject):
 
         self.checkTimer.start(self.timerPeriod)
 
-    def setWatchedNodes(self, watchedNodes: [int]):
-        self.commandQueue.put((WorkerMessage.CHANGE_WATCHED, watchedNodes))
+    def setWatchedNodes(self, watchedNodes: [int], watchedVoltageSourceIDs: [int],):
+        self.commandQueue.put((WorkerMessage.CHANGE_WATCHED, watchedNodes, watchedVoltageSourceIDs))
 
     def notifySwitchStateChanged(self, isOpen: bool, uid: int):
         self.commandQueue.put((WorkerMessage.SWITCH_STATE_CHANGE, uid, isOpen))
