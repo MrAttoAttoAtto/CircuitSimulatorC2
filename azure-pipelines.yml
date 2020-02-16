@@ -10,8 +10,8 @@ strategy:
   matrix:
     mac:
       imageName: 'macos-10.15'
-    #windows:
-    #  imageName: 'vs2017-win2016'
+    windows:
+      imageName: 'vs2017-win2016'
 
 pool:
   vmImage: $(imageName)
@@ -31,3 +31,14 @@ steps:
 - publish: ./bin/CircuitSimulatorC2.dmg
   artifact: CircuitSimulatorC2
   condition: eq( variables['Agent.OS'], 'Darwin' )
+
+  # Windows
+- powershell: |
+    pip install -r $(Build.SourcesDirectory)/requirements.txt
+    pip install pyinstaller
+    pyinstaller -F --icon=$(Build.SourcesDirectory)/Icons/icon.ico -n "Circuit Simulator C2" $(Build.SourcesDirectory)/uimain.py
+  condition: eq( variables['Agent.OS'], 'Windows_NT' )
+
+- publish: "./dist/Circuit Simulator C2.exe"
+  artifact: CircuitSimulatorC2
+  condition: eq( variables['Agent.OS'], 'Windows_NT' )
