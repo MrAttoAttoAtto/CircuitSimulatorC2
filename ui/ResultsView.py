@@ -1,19 +1,31 @@
+import pyqtgraph as pg
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QSplitter, QTableWidgetItem, QLabel
+from PyQt5.QtWidgets import QSplitter, QLabel, QColorDialog
 from pyqtgraph import PlotWidget
 
 from general.Circuit import Circuit
 from ui.GraphicalComponents import CircuitSymbol, GraphicalTestPoint, GraphicalAmmeter, GraphicalVoltmeter
 
 
+def populateCustomColours():
+    for i in range(QColorDialog.customCount()):
+        QColorDialog.setCustomColor(i, pg.intColor(i, QColorDialog.customCount()))
+
+
 class ResultsView(QSplitter):
     def __init__(self, parent=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
+
+        populateCustomColours()
+
         font = QFont("Monospace")
         font.setStyleHint(QFont.TypeWriter)
+
         self.dataBox = QLabel("")
         self.dataBox.setFont(font)
         self.dataBox.setContentsMargins(10, 10, 10, 10)
+
+        pg.setConfigOption("foreground", 'k')
         self.voltageGraph = PlotWidget(background='w')
         self.currentGraph = PlotWidget(background='w')
         self.addWidget(self.dataBox)
@@ -33,9 +45,11 @@ class ResultsView(QSplitter):
                     if cComp._patched_id == gComp.uid:
                         results[gComp.attributes["name"]] = str(cComp.currentThroughReference.value) + "A"
             elif isinstance(gComp, GraphicalTestPoint):
-                results[gComp.attributes["name"]] = str(circuit.getInputReference(gComp.nodes[0].actual_node).value) + "V"
+                results[gComp.attributes["name"]] = str(
+                    circuit.getInputReference(gComp.nodes[0].actual_node).value) + "V"
             elif isinstance(gComp, GraphicalVoltmeter):
-                voltage = circuit.getInputReference(gComp.nodes[0].actual_node).value - circuit.getInputReference(gComp.nodes[1].actual_node).value
+                voltage = circuit.getInputReference(gComp.nodes[0].actual_node).value - circuit.getInputReference(
+                    gComp.nodes[1].actual_node).value
                 results[gComp.attributes["name"]] = str(voltage) + "V"
         self.voltageGraph.hide()
         self.currentGraph.hide()
@@ -62,7 +76,8 @@ class ResultsView(QSplitter):
             elif isinstance(gComp, GraphicalVoltmeter):
                 nodeWatches.add(gComp.nodes[0].actual_node)
                 nodeWatches.add(gComp.nodes[1].actual_node)
-                self.voltmeterMappings[gComp.attributes["name"]] = (gComp.nodes[0].actual_node, gComp.nodes[1].actual_node)
+                self.voltmeterMappings[gComp.attributes["name"]] = (
+                    gComp.nodes[0].actual_node, gComp.nodes[1].actual_node)
 
         self.voltageGraph.show()
         self.currentGraph.show()
@@ -70,7 +85,8 @@ class ResultsView(QSplitter):
         self.currentGraph.getPlotItem().clear()
         self.currentPlots = {name: (self.currentGraph.getPlotItem().plot(), []) for name in self.ammeterMappings}
         self.voltagePlots = {name: (self.voltageGraph.getPlotItem().plot(), []) for name in self.nodeMappings}
-        self.voltagePlots.update({name: (self.voltageGraph.getPlotItem().plot(), []) for name in self.voltmeterMappings})
+        self.voltagePlots.update(
+            {name: (self.voltageGraph.getPlotItem().plot(), []) for name in self.voltmeterMappings})
         self.timeAxis = []
         return nodeWatches, ammeterComponents
 

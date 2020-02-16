@@ -1,18 +1,16 @@
 import sys
 import traceback
 
-import pyqtgraph as pg
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QMessageBox, QFileDialog, QGraphicsView, QSplitter
-from pyqtgraph import PlotWidget
 
 from general.Circuit import Circuit
 from general.Environment import Environment
 from general.Simulation import StaticSimulation
 from ui import persistence
 from ui.CircuitScene import CircuitScene
-from ui.GraphicalComponents import GraphicalGround, COMPONENTS, CircuitSymbol, CircuitWire, GraphicalTestPoint
+from ui.GraphicalComponents import GraphicalGround, COMPONENTS, CircuitSymbol, CircuitWire
 from ui.ResultsView import ResultsView
 from ui.SimulationWorker import TransientWorker
 from ui.persistence import ProgramSettings
@@ -38,7 +36,6 @@ class MainWindow(QMainWindow):
         self.mview = CircuitView(self.mscene)
         self.mview.setDragMode(QGraphicsView.RubberBandDrag)
         self.splitter.addWidget(self.mview)
-        pg.setConfigOption("foreground", 'k')
         self.resultsView = ResultsView()
         self.splitter.addWidget(self.resultsView)
         self.setResultsVisible(False)
@@ -125,7 +122,8 @@ class MainWindow(QMainWindow):
                 maxGraphSteps = self.settings.get("graphTimeRange") // self.settings.get("simulationFidelity")
                 (watchedNodes, watchedCurrents) = self.resultsView.prepareTransient(circuit, components, maxGraphSteps)
 
-                self.current_simulation = TransientWorker(circuit, watchedNodes, watchedCurrents, self.settings.get("convergenceLimit"),
+                self.current_simulation = TransientWorker(circuit, watchedNodes, watchedCurrents,
+                                                          self.settings.get("convergenceLimit"),
                                                           self.settings.get("timeBase"),
                                                           self.settings.get("simulationFidelity"))
 
@@ -369,5 +367,6 @@ class MainWindow(QMainWindow):
 
 def run():
     app = QApplication([])
+
     wind = MainWindow()
     sys.exit(app.exec_())
