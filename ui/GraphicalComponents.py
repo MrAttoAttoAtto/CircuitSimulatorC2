@@ -206,7 +206,7 @@ class GraphicalCapacitor(CircuitSymbol):
         return QRectF(0, 0, 20, 50)
 
     def addToCircuit(self, circuit: Circuit):
-        cap = Capacitor(**self.attributes)
+        cap = Capacitor(capacitance=self.attributes["capacitance"])
         cap._patched_id = self.uid
         circuit.add(cap, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
@@ -421,7 +421,9 @@ class GraphicalSwitch(CircuitSymbol):
         switch._patched_id = self.uid
         circuit.add(switch, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
+@CircuitComponent
 class GraphicalMOSFET(CircuitSymbol):
+    PREFIX = "Q"
     NAME = "MOSFET"
     ATTRIBUTES = {'thresholdVoltage': [float, "Threshold Voltage", "V", "Volts"],
                   'width': [float, "Width", "m", "Metres"],
@@ -456,11 +458,13 @@ class GraphicalMOSFET(CircuitSymbol):
         return QRectF(0, 0, 30, 50)
 
     def addToCircuit(self, circuit: Circuit):
-        mosfet = MOSFET(**self.attributes)
+        mosfet = MOSFET(self.attributes["thresholdVoltage"], self.attributes["width"], self.attributes["length"], self.attributes["specificCapacitance"], self.attributes["electronMobility"])
         mosfet._patched_id = self.uid
         circuit.add(mosfet, (self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node))
 
+@CircuitComponent
 class GraphicalVCVS(CircuitSymbol):
+    PREFIX = "VCVS"
     NAME = "VCVS"
     ATTRIBUTES = {'mu': [float, "Gain", " ", "Dimensionless"]}
     DEFAULT_ATTRIBUTES = {'mu': 1.0}
@@ -489,7 +493,7 @@ class GraphicalVCVS(CircuitSymbol):
         return QRectF(-20, 0, 40, 60)
 
     def addToCircuit(self, circuit: Circuit):
-        vcvs = VCVS(**self.attributes)
+        vcvs = VCVS(self.attributes["mu"])
         vcvs._patched_id = self.uid
         circuit.add(vcvs, (
         self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node, self.nodes[3].actual_node))
