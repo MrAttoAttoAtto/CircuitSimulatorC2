@@ -29,5 +29,5 @@ steps:
   displayName: Build app on macOS
 
 - publish: ./bin/CircuitSimulatorC2.dmg
-  artifact: CircuitSimulatorC2.dmg
+  artifact: CircuitSimulatorC2
   condition: eq( variables['Agent.OS'], 'Darwin' )
