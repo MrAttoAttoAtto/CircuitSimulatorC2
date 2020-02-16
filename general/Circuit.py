@@ -110,7 +110,7 @@ class Circuit:
                 inputValue += delta_in[i]
 
             # If the better guess is indistinguishable from the prior guess, we probably have the right value...
-            if (abs(delta_in) < 1e-5).all():
+            if (abs(delta_in) < 4e-5).all():
                 return
         else:
             raise ConvergenceFailure("Failed to converge.")

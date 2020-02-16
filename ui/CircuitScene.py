@@ -60,3 +60,13 @@ class CircuitScene(QGraphicsScene):
             self._wire_spawn = None
             self._wire_spawn_source = None
             self.parent().setEdited()
+
+    def rotateSelected(self, left=False):
+        scale = 1 if not left else -1
+        selected = list(filter(lambda x: x.isSelected(), self.items()))
+        if len(selected) > 0:
+            self.parent().setEdited()
+            for c in selected:
+                for n in c.nodes:
+                    n.disconnect_all()
+                c.setRotation(90 * scale + c.rotation())

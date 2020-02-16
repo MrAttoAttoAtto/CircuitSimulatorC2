@@ -1,9 +1,10 @@
+import sys
 import traceback
 
+import pyqtgraph as pg
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QMessageBox, QFileDialog, QGraphicsView, QSplitter
-import pyqtgraph as pg
 from pyqtgraph import PlotWidget
 
 from general.Circuit import Circuit
@@ -110,6 +111,9 @@ class MainWindow(QMainWindow):
                     errorBox.setIcon(QMessageBox.Warning)
 
                     errorBox.exec()
+
+                    self.runDynamicAction.setDisabled(False)
+                    self.runStaticAction.setDisabled(False)
                     return
 
                 self.nodes_valid_state = True
@@ -257,6 +261,18 @@ class MainWindow(QMainWindow):
         closeAction.setShortcut(QKeySequence("Ctrl+Q"))
         fileMenu.addAction(closeAction)
 
+        editMenu = menuBar.addMenu("Edit")
+
+        rotateRightAction = QAction("Rotate Right", menuBar)
+        rotateRightAction.triggered.connect(self.mscene.rotateSelected)
+        rotateRightAction.setShortcut(QKeySequence("Ctrl+R"))
+        editMenu.addAction(rotateRightAction)
+
+        rotateLeftAction = QAction("Rotate Left", menuBar)
+        rotateLeftAction.triggered.connect(lambda: self.mscene.rotateSelected(True))
+        rotateLeftAction.setShortcut(QKeySequence("Ctrl+L"))
+        editMenu.addAction(rotateLeftAction)
+
     def setEdited(self):
         self.edited = True
         if self.currentFile is not None:
@@ -372,4 +388,4 @@ class MainWindow(QMainWindow):
 def run():
     app = QApplication([])
     wind = MainWindow()
-    exit(app.exec_())
+    sys.exit(app.exec_())
