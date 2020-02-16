@@ -1,3 +1,4 @@
+import sys
 import traceback
 
 import pyqtgraph as pg
@@ -385,4 +386,4 @@ class MainWindow(QMainWindow):
 def run():
     app = QApplication([])
     wind = MainWindow()
-    app.exec_()
+    sys.exit(app.exec_())

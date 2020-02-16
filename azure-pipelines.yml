@@ -38,6 +38,7 @@ steps:
     pip install pyinstaller
     pyinstaller -F --icon=$(Build.SourcesDirectory)/Icons/icon.ico -n "Circuit Simulator C2" $(Build.SourcesDirectory)/uimain.py
   condition: eq( variables['Agent.OS'], 'Windows_NT' )
+  displayName: Build app on Windows
 
 - publish: "./dist/Circuit Simulator C2.exe"
   artifact: CircuitSimulatorC2
