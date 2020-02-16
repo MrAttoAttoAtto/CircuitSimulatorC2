@@ -1,9 +1,9 @@
 import traceback
 
+import pyqtgraph as pg
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QMessageBox, QFileDialog, QGraphicsView, QSplitter
-import pyqtgraph as pg
 from pyqtgraph import PlotWidget
 
 from general.Circuit import Circuit
@@ -385,4 +385,4 @@ class MainWindow(QMainWindow):
 def run():
     app = QApplication([])
     wind = MainWindow()
-    exit(app.exec_())
+    app.exec_()

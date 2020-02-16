@@ -19,13 +19,15 @@ pool:
 steps:
 # macOS
 - bash: |
-    pip3 install -r requirements.txt
+    pip3 install -r $(Build.SourcesDirectory)/requirements.txt
     pip3 install py2app
-    python3 setupmac.py py2app
+    python3 $(Build.SourcesDirectory)/setupmac.py py2app
+    ln -s /Applications $(Build.SourcesDirectory)/dist
     mkdir bin
-    hdiutil create -volname "Circuit Simulator C2" -srcfolder ./dist -ov -format UDZO ./bin/CircuitSimulatorC2.dmg
+    hdiutil create -volname "Circuit Simulator C2" -srcfolder $(Build.SourcesDirectory)/dist -ov -format UDZO ./bin/CircuitSimulatorC2.dmg
   condition: eq( variables['Agent.OS'], 'Darwin' )
-  displayName: Builds app on macOS
+  displayName: Build app on macOS
 
 - publish: ./bin/CircuitSimulatorC2.dmg
   artifact: CircuitSimulatorC2.dmg
+  condition: eq( variables['Agent.OS'], 'Darwin' )
