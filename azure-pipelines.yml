@@ -29,7 +29,7 @@ steps:
   displayName: Build app on macOS
 
 - publish: ./bin/CircuitSimulatorC2.dmg
-  artifact: CircuitSimulatorC2
+  artifact: "Circuit Simulator C2 - macOS"
   condition: eq( variables['Agent.OS'], 'Darwin' )
 
   # Windows
@@ -41,5 +41,5 @@ steps:
   displayName: Build app on Windows
 
 - publish: "./dist/Circuit Simulator C2.exe"
-  artifact: CircuitSimulatorC2
+  artifact: "Circuit Simulator C2 - Windows"
   condition: eq( variables['Agent.OS'], 'Windows_NT' )
