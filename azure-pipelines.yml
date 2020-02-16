@@ -24,11 +24,11 @@ steps:
     python3 $(Build.SourcesDirectory)/setupmac.py py2app
     ln -s /Applications $(Build.SourcesDirectory)/dist
     mkdir bin
-    hdiutil create -volname "Circuit Simulator C2" -srcfolder $(Build.SourcesDirectory)/dist -ov -format UDZO ./bin/CircuitSimulatorC2.dmg
+    hdiutil create -volname "Circuit Simulator C2" -srcfolder $(Build.SourcesDirectory)/dist -ov -format UDZO "./bin/Circuit Simulator C2.dmg"
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: Build app on macOS
 
-- publish: ./bin/CircuitSimulatorC2.dmg
+- publish: "./bin/Circuit Simulator C2.dmg"
   artifact: "Circuit Simulator C2 - macOS"
   condition: eq( variables['Agent.OS'], 'Darwin' )
 
@@ -36,7 +36,7 @@ steps:
 - powershell: |
     pip install -r $(Build.SourcesDirectory)/requirements.txt
     pip install pyinstaller
-    pyinstaller -F --icon=$(Build.SourcesDirectory)/Icons/icon.ico -n "Circuit Simulator C2" $(Build.SourcesDirectory)/uimain.py
+    pyinstaller -F --icon=$(Build.SourcesDirectory)/Icons/icon.ico -n "Circuit Simulator C2" --noconsole $(Build.SourcesDirectory)/uimain.py
   condition: eq( variables['Agent.OS'], 'Windows_NT' )
   displayName: Build app on Windows
 

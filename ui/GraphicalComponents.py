@@ -10,6 +10,7 @@ from components.Inductor import Inductor
 from components.MOSFET import MOSFET
 from components.Resistor import Resistor
 from components.Switch import Switch
+from components.VoltageControlledVoltageSource import VCVS
 from components.VoltageSource import VoltageSource
 from general.Circuit import Circuit
 from ui.utils import defaultPen
@@ -340,6 +341,41 @@ class GraphicalMOSFET(CircuitSymbol):
         circuit.add(mosfet, (self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node))
 
 
+class GraphicalVCVS(CircuitSymbol):
+    NAME = "VCVS"
+    ATTRIBUTES = {'mu': [float, "Gain", " ", "Dimensionless"]}
+    DEFAULT_ATTRIBUTES = {'mu': 1.0}
+
+    def createNodes(self):
+        # anode, cathode, control anode, control cathode
+        return [CircuitNode(10, 0), CircuitNode(10, 60), CircuitNode(-20, 10), CircuitNode(-20, 50)]
+
+    def createDecor(self):
+        diamond = QPolygonF([QPointF(10, 20), QPointF(20, 30), QPointF(10, 40), QPointF(0, 30)])
+        return [QGraphicsLineItem(-20, 10, -10, 10),
+                QGraphicsLineItem(-20, 50, -10, 50),
+                QGraphicsEllipseItem(-10, 8.5, 3, 3),
+                QGraphicsEllipseItem(-10, 48.5, 3, 3),
+                QGraphicsLineItem(-11, 14, -11, 19),
+                QGraphicsLineItem(-13.5, 16.5, -8.5, 16.5),
+                QGraphicsLineItem(-13.5, 43.5, -8.5, 43.5),
+                QGraphicsLineItem(10, 0, 10, 20),
+                QGraphicsLineItem(10, 60, 10, 40),
+                QGraphicsPolygonItem(diamond),
+                QGraphicsLineItem(10, 23, 10, 28),
+                QGraphicsLineItem(7.5, 25.5, 12.5, 25.5),
+                QGraphicsLineItem(7.5, 34.5, 12.5, 34.5)]
+
+    def boundingRect(self):
+        return QRectF(-20, 0, 40, 60)
+
+    def addToCircuit(self, circuit: Circuit):
+        vcvs = VCVS(**self.attributes)
+        vcvs._patched_id = self.uid
+        circuit.add(vcvs, (
+        self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node, self.nodes[3].actual_node))
+
+
 class GraphicalSwitch(CircuitSymbol):
     NAME = "Switch"
     ATTRIBUTES = {}
@@ -428,5 +464,6 @@ COMPONENTS = {"Resistor": GraphicalResistor,
               "AC Voltage Source": GraphicalACVoltageSource,
               "Diode": GraphicalDiode,
               "MOSFET": GraphicalMOSFET,
+              "VCVS": GraphicalVCVS,
               "Switch": GraphicalSwitch,
               "Test Point": GraphicalTestPoint}
