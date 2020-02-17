@@ -90,19 +90,25 @@ class Diode:
 
         voltageAcross = self.anodeVoltage.value - self.cathodeVoltage.value
 
-        # If the diode is in reverse bias more strong than the breakdown voltage, it's broken down!
-        if voltageAcross < -self.breakdownVoltage:
-            reverseBiasVoltage = -self.breakdownVoltage - voltageAcross
-            current = -(self.saturationCurrent * math.exp(reverseBiasVoltage / idealityTemperatureModifier))
+        try:
+            # If the diode is in reverse bias more strong than the breakdown voltage, it's broken down!
+            if voltageAcross < -self.breakdownVoltage:
+                reverseBiasVoltage = -self.breakdownVoltage - voltageAcross
+                current = -(self.saturationCurrent * math.exp(reverseBiasVoltage / idealityTemperatureModifier))
 
-            conductance = self.saturationCurrent * \
-                          math.exp(reverseBiasVoltage / idealityTemperatureModifier) / idealityTemperatureModifier
+                conductance = self.saturationCurrent * \
+                              math.exp(reverseBiasVoltage / idealityTemperatureModifier) / idealityTemperatureModifier
 
-        else:
-            current = self.saturationCurrent * (math.exp(voltageAcross / idealityTemperatureModifier) - 1)
+            else:
+                current = self.saturationCurrent * (math.exp(voltageAcross / idealityTemperatureModifier) - 1)
 
-            conductance = self.saturationCurrent * \
-                          math.exp(voltageAcross / idealityTemperatureModifier) / idealityTemperatureModifier
+                conductance = self.saturationCurrent * \
+                              math.exp(voltageAcross / idealityTemperatureModifier) / idealityTemperatureModifier
+
+        except OverflowError:
+            # It's probably wrong if there's a math range error, so to save ourselves from pain, make it a smol resistor
+            conductance = 1 / environment.gMin
+            current = voltageAcross * conductance
 
         self.anodeCurrent += current
         self.cathodeCurrent -= current
