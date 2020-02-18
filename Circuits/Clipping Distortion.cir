@@ -1,0 +1,20 @@
+0=2:1=30,33:2=:3=5:4=22,25,23:5=:6=8:7=20,16:8=:9=17:10=34,15:11=18:12=27:13=19:14=26:15=34:16=20:17=:18=:19=:20=:21=28:22=25,23:23=25:24=31:25=:26=:27=:28=:29=32:30=33:31=:32=:33=:34=
+Wire:name=,rotation=0.0:0,1:20.0,-70.0;-10.0,20.0;10.0,-50.0
+Test Point:name=V3,rotation=0.0:2:20.0,-100.0
+Wire:name=,rotation=0.0:3,4:190.0,-70.0;0.0,10.0;-60.0,10.0;130.0,-60.0
+Test Point:name=V1,rotation=0.0:5:190.0,-100.0
+Wire:name=,rotation=0.0:6,7:-80.0,40.0;10.0,-30.0;-70.0,10.0
+Ground:name=G2,rotation=0.0:8:-90.0,40.0
+Wire:name=,rotation=0.0:9,10:190.0,90.0;-180.0,-70.0;10.0,20.0
+Wire:name=,rotation=0.0:11,12:190.0,20.0;-60.0,-20.0;130.0,0.0
+Wire:name=,rotation=0.0:13,14:-70.0,-60.0;0.0,-40.0;200.0,-40.0;130.0,-100.0
+Wire:name=,rotation=0.0:15,16:10.0,20.0;-80.0,-10.0;-70.0,10.0
+Voltage Source:voltage=3.0,name=VS5,rotation=180.0:17,18:200.0,90.0
+Voltage Source:voltage=6.0,name=VS4,rotation=0.0:19,20:-80.0,-60.0
+Wire:name=,rotation=0.0:21,22:130.0,-40.0;0.0,-20.0;130.0,-60.0
+Wire:name=,rotation=0.0:23,24:130.0,-60.0;-20.0,0.0;110.0,-60.0
+Diode:breakdownVoltage=40.0,saturationCurrent=1e-12,ideality=1.0,name=D2,rotation=0.0:25,26:120.0,-100.0
+Diode:breakdownVoltage=40.0,saturationCurrent=1e-12,ideality=1.0,name=D1,rotation=0.0:27,28:120.0,-40.0
+Wire:name=,rotation=0.0:29,30:30.0,-60.0;-20.0,10.0;10.0,-50.0
+Resistor:resistance=470.0,name=R4,rotation=90.0:31,32:110.0,-70.0
+AC Voltage Source:peakVoltage=9.0,frequency=10.0,name=VS3,rotation=0.0:33,34:0.0,-50.0
