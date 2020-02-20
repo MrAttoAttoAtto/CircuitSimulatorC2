@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt, QRectF, QPointF
-from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker, QPainterPath, QFont
+from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker, QPainterPath, QFont, QColor, QColorConstants, QBrush
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QDialogButtonBox, QMessageBox, QGraphicsItem, \
     QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem, QGraphicsPathItem, \
     QGraphicsTextItem, QGraphicsSimpleTextItem
@@ -15,8 +15,8 @@ from components.VoltageControlledVoltageSource import VCVS
 from components.VoltageSource import VoltageSource
 from general.Circuit import Circuit
 from ui.utils import defaultPen
-from ui.visuals import CircuitItem, CircuitNode
-
+from ui.visuals import CircuitItem, CircuitNode, ColourSelectButton
+from pyqtgraph import mkColor
 
 class CircuitSymbol(CircuitItem):
     PREFIX = ""
@@ -28,6 +28,8 @@ class CircuitSymbol(CircuitItem):
         super().__init__()
         self.uid = uid
         self.attributes = self.DEFAULT_ATTRIBUTES.copy()
+        # An non-unique guaranteed, 'id' corresponding to the type of the component.
+        self._temp_id = 0
         self.nodes = self.createNodes()
         self.decor = self.createDecor()
 
@@ -47,6 +49,7 @@ class CircuitSymbol(CircuitItem):
             i = 1
             while f"{self.PREFIX}{i}" in componentNames:
                 i += 1
+            self._temp_id = i
             self.attributes["name"] = f"{self.PREFIX}{i}"
         if self.attributes["name"] in componentNames:
             raise ValueError("Component Name {} already exists.".format(self.attributes["name"]))
@@ -64,7 +67,10 @@ class CircuitSymbol(CircuitItem):
         attributeMap = {}
         for i, (name, (typ, displayName, unit, unitTooltip)) in enumerate(self.ATTRIBUTES.items()):
             label = QLabel(f"{displayName}:")
-            entry = QLineEdit(f"{self.attributes[name]}")
+            if typ is QColor:
+                entry = ColourSelectButton(self.attributes[name], None)
+            else:
+                entry = QLineEdit(f"{self.attributes[name]}")
             unitLabel = QLabel(unit)
             unitLabel.setCursor(Qt.WhatsThisCursor)
             unitLabel.setToolTip(unitTooltip)
@@ -95,6 +101,7 @@ class CircuitSymbol(CircuitItem):
 
             if self.attributes != middlemanMap:
                 self.attributes = middlemanMap
+                self.onAttributesUpdated()
                 self.scene().parent().setEdited()
             dialog.close()
 
@@ -105,6 +112,8 @@ class CircuitSymbol(CircuitItem):
         dialog.setLayout(gridLayout)
 
         dialog.exec()
+    def onAttributesUpdated(self):
+        pass
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionHasChanged:
@@ -363,17 +372,25 @@ class GraphicalGround(CircuitSymbol):
 class GraphicalTestPoint(CircuitSymbol):
     PREFIX = "V"
     NAME = "Test Point"
-    ATTRIBUTES = {}
-    DEFAULT_ATTRIBUTES = {}
+    ATTRIBUTES = {"colour": [QColor, "Colour", "", ""]}
+    DEFAULT_ATTRIBUTES = {"color": Qt.black}
+
+    def populateName(self, componentNames: set):
+        super().populateName(componentNames)
+        self.attributes["colour"] = mkColor((self._temp_id % 16, 16))
+        self.onAttributesUpdated()
+
+    def onAttributesUpdated(self):
+        self.decor[1].setBrush(QBrush(self.attributes["colour"]))
 
     def createNodes(self):
         return [CircuitNode(0, 30)]
 
     def createDecor(self):
+        polygon = QPolygonF([QPointF(10, 10), QPointF(20, 20), QPointF(30, 0), QPointF(10, 10)])
+
         return [QGraphicsLineItem(0, 30, 15, 15),
-                QGraphicsLineItem(10, 10, 20, 20),
-                QGraphicsLineItem(10, 10, 30, 0),
-                QGraphicsLineItem(20, 20, 30, 0)]
+                QGraphicsPolygonItem(polygon)]
 
     def boundingRect(self):
         return QRectF(0, 0, 30, 30)
@@ -503,8 +520,16 @@ class GraphicalVCVS(CircuitSymbol):
 class GraphicalAmmeter(CircuitSymbol):
     PREFIX = "I"
     NAME = "Ammeter"
-    ATTRIBUTES = {"name": [str, "Component Name", "", ""]}
-    DEFAULT_ATTRIBUTES = {}
+    ATTRIBUTES = {"colour": [QColor, "Colour", "", ""]}
+    DEFAULT_ATTRIBUTES = {"color": Qt.black}
+
+    def populateName(self, componentNames: set):
+        super().populateName(componentNames)
+        self.attributes["colour"] = mkColor((self._temp_id % 16, 16))
+        self.onAttributesUpdated()
+
+    def onAttributesUpdated(self):
+        self.decor[0].setBrush(QBrush(self.attributes["colour"]))
 
     def createNodes(self):
         return [CircuitNode(10, 0), CircuitNode(10, 70)]
@@ -521,7 +546,7 @@ class GraphicalAmmeter(CircuitSymbol):
                 QGraphicsLineItem(10, 0, 10, 20)]
 
     def boundingRect(self):
-        return QRectF(0, 0, 70, 20)
+        return QRectF(0, 0, 20, 70)
 
     def addToCircuit(self, circuit: Circuit):
         meter = VoltageSource(0)
@@ -533,8 +558,16 @@ class GraphicalAmmeter(CircuitSymbol):
 class GraphicalVoltmeter(CircuitSymbol):
     PREFIX = "V"
     NAME = "Voltmeter"
-    ATTRIBUTES = {"name": [str, "Component Name", "", ""]}
-    DEFAULT_ATTRIBUTES = {}
+    ATTRIBUTES = {"colour": [QColor, "Colour", "", ""]}
+    DEFAULT_ATTRIBUTES = {"color": Qt.black}
+
+    def populateName(self, componentNames: set):
+        super().populateName(componentNames)
+        self.attributes["colour"] = mkColor((self._temp_id % 16, 16))
+        self.onAttributesUpdated()
+
+    def onAttributesUpdated(self):
+        self.decor[0].setBrush(QBrush(self.attributes["colour"]))
 
     def createNodes(self):
         return [CircuitNode(10, 0), CircuitNode(10, 70)]
@@ -568,4 +601,5 @@ COMPONENTS = {"Resistor": GraphicalResistor,
               "VCVS": GraphicalVCVS,
               "Switch": GraphicalSwitch,
               "Test Point": GraphicalTestPoint,
-              "Ammeter": GraphicalAmmeter}
+              "Ammeter": GraphicalAmmeter,
+              "Voltmeter": GraphicalVoltmeter}

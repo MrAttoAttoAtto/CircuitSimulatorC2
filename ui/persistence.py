@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QPointF, QSettings
+from PyQt5.QtCore import QPointF, QSettings, Qt
 from PyQt5.QtWidgets import QDialog, QLineEdit, QDialogButtonBox, QVBoxLayout, QMessageBox, QGridLayout, \
     QLabel
 
@@ -121,10 +121,14 @@ def load(scene: CircuitScene, data: str):
         next_id += 1
         nodes = [int(node) for node in nodes.split(",")]
         nodeDict.update({nodeIndex: nodeObject for nodeIndex, nodeObject in zip(nodes, newComponent.nodes)})
-        # Begin Patch
+        # Begin Patch 1
         if "name" not in newComponent.attributes:
             newComponent.attributes["name"] = ""
-        # End Patch
+        # End Patch 1
+        # Begin Patch 2
+        if "colour" not in newComponent.attributes and "colour" in newComponent.ATTRIBUTES:
+            newComponent.attributes["colour"] = Qt.black
+        # End Patch 2
         newComponent.populateName(scene.componentNames)
         scene.addItem(newComponent)
 

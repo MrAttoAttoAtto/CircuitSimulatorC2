@@ -7,10 +7,25 @@ Created on Tue Dec 17 14:30:00 2019
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPen
 from PyQt5.QtWidgets import (QGraphicsView,
-                             QGraphicsItem, QGraphicsRectItem)
+                             QGraphicsItem, QGraphicsRectItem, QPushButton, QColorDialog)
 
 from ui.utils import defaultPen, selectedPen, snap_point
 
+
+class ColourSelectButton(QPushButton):
+
+    def __init__(self, colour, parent):
+        super().__init__(parent)
+        self.colour = colour
+        self.setStyleSheet("background-color: " + self.colour.name())
+        self.clicked.connect(self.changeColour)
+
+    def changeColour(self):
+        self.colour = QColorDialog.getColor(self.colour)
+        self.setStyleSheet("background-color: " + self.colour.name())
+
+    def text(self):
+        return self.colour.name()
 
 class CircuitNode(QGraphicsRectItem):
     def __init__(self, x=0, y=0):

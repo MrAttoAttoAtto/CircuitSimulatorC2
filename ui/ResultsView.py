@@ -1,7 +1,7 @@
 import pyqtgraph as pg
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QSplitter, QLabel, QColorDialog
-from pyqtgraph import PlotWidget
+from pyqtgraph import PlotWidget, mkPen
 
 from general.Circuit import Circuit
 from ui.GraphicalComponents import CircuitSymbol, GraphicalTestPoint, GraphicalAmmeter, GraphicalVoltmeter
@@ -61,6 +61,7 @@ class ResultsView(QSplitter):
         # Find ammeter stuff
         ammeterComponents = []
         self.ammeterMappings = {}
+        self.componentColours = {}
         nodeWatches = set()
         self.nodeMappings = {}
         self.voltmeterMappings = {}
@@ -70,23 +71,26 @@ class ResultsView(QSplitter):
                     if cComp._patched_id == gComp.uid:
                         ammeterComponents.append(gComp.uid)
                         self.ammeterMappings[gComp.attributes["name"]] = gComp.uid
+                        self.componentColours[gComp.attributes["name"]] = gComp.attributes["colour"]
             elif isinstance(gComp, GraphicalTestPoint):
                 nodeWatches.add(gComp.nodes[0].actual_node)
                 self.nodeMappings[gComp.attributes["name"]] = gComp.nodes[0].actual_node
+                self.componentColours[gComp.attributes["name"]] = gComp.attributes["colour"]
             elif isinstance(gComp, GraphicalVoltmeter):
                 nodeWatches.add(gComp.nodes[0].actual_node)
                 nodeWatches.add(gComp.nodes[1].actual_node)
                 self.voltmeterMappings[gComp.attributes["name"]] = (
                     gComp.nodes[0].actual_node, gComp.nodes[1].actual_node)
+                self.componentColours[gComp.attributes["name"]] = gComp.attributes["colour"]
 
         self.voltageGraph.show()
         self.currentGraph.show()
         self.voltageGraph.getPlotItem().clear()
         self.currentGraph.getPlotItem().clear()
-        self.currentPlots = {name: (self.currentGraph.getPlotItem().plot(), []) for name in self.ammeterMappings}
-        self.voltagePlots = {name: (self.voltageGraph.getPlotItem().plot(), []) for name in self.nodeMappings}
+        self.currentPlots = {name: (self.currentGraph.getPlotItem().plot(pen=mkPen(self.componentColours[name], width=2)), []) for name in self.ammeterMappings}
+        self.voltagePlots = {name: (self.voltageGraph.getPlotItem().plot(pen=mkPen(self.componentColours[name], width=2)), []) for name in self.nodeMappings}
         self.voltagePlots.update(
-            {name: (self.voltageGraph.getPlotItem().plot(), []) for name in self.voltmeterMappings})
+            {name: (self.voltageGraph.getPlotItem().plot(pen=mkPen(self.componentColours[name], width=2)), []) for name in self.voltmeterMappings})
         self.timeAxis = []
         return nodeWatches, ammeterComponents
 
