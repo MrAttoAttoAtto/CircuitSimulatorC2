@@ -123,8 +123,8 @@ class MOSFET:
                                             - drainSourceVoltage ** 2)
 
             gateConductance = self.currentFactor * 2 * (self.drainVoltage - self.sourceVoltage)
-            sourceConductance = self.currentFactor * 2 * (self.sourceVoltage - self.gateVoltage)
-            drainConductance = self.currentFactor * 2 * (self.gateVoltage - self.drainVoltage)
+            sourceConductance = self.currentFactor * 2 * (self.sourceVoltage - self.gateVoltage + self.thresholdVoltage)
+            drainConductance = self.currentFactor * 2 * (self.gateVoltage - self.drainVoltage - self.thresholdVoltage)
 
             self.sourceCurrentByGateVoltage -= gateConductance
             self.drainCurrentByGateVoltage += gateConductance

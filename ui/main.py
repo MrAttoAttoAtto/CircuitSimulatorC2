@@ -287,7 +287,22 @@ class MainWindow(QMainWindow):
         with open(fileName, 'r') as fil:
             data = fil.read()
 
-        self.next_id = persistence.load(self.mscene, data)
+        try:
+            self.next_id = persistence.load(self.mscene, data)
+        except Exception as e:
+            errorBox = QMessageBox()
+            errorBox.setText(f"Opening failed with error {e.__class__.__name__}")
+            errorBox.setInformativeText(f'"{str(e)}"')
+            errorBox.setDetailedText(''.join(traceback.format_exception(e.__class__, e, e.__traceback__)))
+            errorBox.setWindowTitle("Open Failure")
+            errorBox.setIcon(QMessageBox.Warning)
+
+            errorBox.exec()
+
+            self.edited = False
+            self.new()
+
+            return False
 
         self.currentFile = fileName
         self.statusBar().showMessage("File opened successfully.")

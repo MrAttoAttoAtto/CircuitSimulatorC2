@@ -91,6 +91,22 @@ def load(scene: CircuitScene, data: str):
     for componentLine in componentLines:
         name, parameters, nodes, position = componentLine.split(":")
 
+        # Patch 2 for old files
+        if parameters == "":
+            parameters = "rotation=0"
+        # End patch 2
+
+        parameterStringDict = {parameter: value
+                               for parameter, value in [pair.split("=") for pair in parameters.split(",")]}
+
+        # Also a patch
+        if parameterStringDict.get("rotation") is not None:
+            rotation = float(parameterStringDict["rotation"])
+            del parameterStringDict["rotation"]
+        else:
+            rotation = 0
+        # End also patch
+
         if name == "Wire":
             newUberPath = UberPath()
             points = [QPointF(float(x), float(y)) for x, y in [pair.split(",") for pair in position.split(";")]]
@@ -113,11 +129,13 @@ def load(scene: CircuitScene, data: str):
             x, y = position.split(",")
             newComponent = COMPONENTS[name](next_id, float(x), float(y))
 
-            # If it has attributes...
-            if parameters != "":
-                parameterDict = {parameter: newComponent.ATTRIBUTES[parameter][0](value)
-                                 for parameter, value in [pair.split("=") for pair in parameters.split(",")]}
-                newComponent.attributes = parameterDict
+            parameterDict = {parameter: newComponent.ATTRIBUTES[parameter][0](value)
+                             for parameter, value in parameterStringDict.items()}
+
+            newComponent.attributes = parameterDict
+
+        newComponent.setRotation(rotation)
+
         next_id += 1
         nodes = [int(node) for node in nodes.split(",")]
         nodeDict.update({nodeIndex: nodeObject for nodeIndex, nodeObject in zip(nodes, newComponent.nodes)})
@@ -175,6 +193,8 @@ def dump(scene: CircuitScene):
 
     componentEntries = []
     for component in components:
+        if component.attributes.get("rotation") is None:
+            component.attributes["rotation"] = component.rotation()
 
         parameterString = ",".join(f"{parameter}={value}" for parameter, value in component.attributes.items())
         ownedNodes = ",".join(str(nodes.index(node)) for node in component.nodes)

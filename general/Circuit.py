@@ -105,7 +105,8 @@ class Circuit:
             resultVector = [-x.value for x in self.resultVector]
 
             # Solve matrices
-            delta_in = scipy.linalg.lapack.dgesv(jac + 1e-12, resultVector)[2]
+            inverseResult = scipy.linalg.lapack.dgesv(jac, resultVector)
+            delta_in = inverseResult[2]
             for i, inputValue in enumerate(self.inputVector):
                 inputValue += delta_in[i]
 

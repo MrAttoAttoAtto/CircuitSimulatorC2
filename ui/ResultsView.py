@@ -26,8 +26,8 @@ class ResultsView(QSplitter):
         self.dataBox.setContentsMargins(10, 10, 10, 10)
 
         pg.setConfigOption("foreground", 'k')
-        self.voltageGraph = PlotWidget(background='w')
-        self.currentGraph = PlotWidget(background='w')
+        self.voltageGraph = PlotWidget(background='w', left="Voltage (V)", bottom="Time (s)")
+        self.currentGraph = PlotWidget(background='w', left="Current (A)", bottom="Time (s)")
         self.addWidget(self.dataBox)
         self.addWidget(self.voltageGraph)
         self.addWidget(self.currentGraph)

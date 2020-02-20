@@ -2,7 +2,7 @@ from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker, QPainterPath, QFont, QColor, QColorConstants, QBrush
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QDialogButtonBox, QMessageBox, QGraphicsItem, \
     QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem, QGraphicsPathItem, \
-    QGraphicsTextItem, QGraphicsSimpleTextItem
+    QGraphicsSimpleTextItem
 
 from components.ACVoltageSource import ACVoltageSource
 from components.Capacitor import Capacitor
@@ -10,6 +10,7 @@ from components.Diode import Diode
 from components.Inductor import Inductor
 from components.MOSFET import MOSFET
 from components.Resistor import Resistor
+from components.SweepVoltageSource import SweepVoltageSource
 from components.Switch import Switch
 from components.VoltageControlledVoltageSource import VCVS
 from components.VoltageSource import VoltageSource
@@ -315,6 +316,35 @@ class GraphicalACVoltageSource(CircuitSymbol):
 
 
 @CircuitComponent
+class GraphicalSweepVoltageSource(CircuitSymbol):
+    PREFIX = "VS"
+    NAME = "Sweeping Voltage Source"
+    # Type then display name then unit then unit tooltip
+    ATTRIBUTES = {'startVoltage': [float, "Starting Voltage", "V", "Volts"],
+                  'rate': [float, "Rate of increase", "V/s", "Volts per second"]}
+    DEFAULT_ATTRIBUTES = {'startVoltage': 0.0, 'rate': 1.0}
+
+    def createNodes(self):
+        return [CircuitNode(10, 0), CircuitNode(10, 70)]
+
+    def createDecor(self):
+        arrowhead = QPolygonF([QPointF(17.5, 27.5), QPointF(17.5, 32.5), QPointF(12.5, 27.5)])
+        return [QGraphicsEllipseItem(-5, 20, 30, 30),
+                QGraphicsLineItem(2.5, 42.5, 17.5, 27.5),
+                QGraphicsPolygonItem(arrowhead),
+                QGraphicsLineItem(10, 0, 10, 20),
+                QGraphicsLineItem(10, 50, 10, 70)]
+
+    def boundingRect(self):
+        return QRectF(-5, 0, 35, 70)
+
+    def addToCircuit(self, circuit: Circuit):
+        pwr = SweepVoltageSource(self.attributes["startVoltage"], self.attributes["rate"])
+        pwr._patched_id = self.uid
+        circuit.add(pwr, (self.nodes[0].actual_node, self.nodes[1].actual_node))
+
+
+@CircuitComponent
 class GraphicalDiode(CircuitSymbol):
     PREFIX = "D"
     NAME = "Diode"
@@ -438,6 +468,7 @@ class GraphicalSwitch(CircuitSymbol):
         switch._patched_id = self.uid
         circuit.add(switch, (self.nodes[0].actual_node, self.nodes[1].actual_node))
 
+
 @CircuitComponent
 class GraphicalMOSFET(CircuitSymbol):
     PREFIX = "Q"
@@ -478,6 +509,7 @@ class GraphicalMOSFET(CircuitSymbol):
         mosfet = MOSFET(self.attributes["thresholdVoltage"], self.attributes["width"], self.attributes["length"], self.attributes["specificCapacitance"], self.attributes["electronMobility"])
         mosfet._patched_id = self.uid
         circuit.add(mosfet, (self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node))
+
 
 @CircuitComponent
 class GraphicalVCVS(CircuitSymbol):
@@ -546,7 +578,7 @@ class GraphicalAmmeter(CircuitSymbol):
                 QGraphicsLineItem(10, 0, 10, 20)]
 
     def boundingRect(self):
-        return QRectF(0, 0, 20, 70)
+        return QRectF(-5, 0, 30, 70)
 
     def addToCircuit(self, circuit: Circuit):
         meter = VoltageSource(0)
@@ -596,6 +628,7 @@ COMPONENTS = {"Resistor": GraphicalResistor,
               "Ground": GraphicalGround,
               "Voltage Source": GraphicalVoltageSource,
               "AC Voltage Source": GraphicalACVoltageSource,
+              "Sweeping Voltage Source": GraphicalSweepVoltageSource,
               "Diode": GraphicalDiode,
               "MOSFET": GraphicalMOSFET,
               "VCVS": GraphicalVCVS,
