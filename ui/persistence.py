@@ -196,7 +196,16 @@ def dump(scene: CircuitScene):
         if component.attributes.get("rotation") is None:
             component.attributes["rotation"] = component.rotation()
 
-        parameterString = ",".join(f"{parameter}={value}" for parameter, value in component.attributes.items())
+        parameterString = ""
+        for parameter, value in component.attributes.items():
+            if len(parameterString) > 0:
+                parameterString += ","
+
+            if parameter == "colour":
+                parameterString += f"{parameter}={value.rgb()}"
+            else:
+                parameterString += f"{parameter}={value}"
+
         ownedNodes = ",".join(str(nodes.index(node)) for node in component.nodes)
 
         if component.NAME != "Wire":

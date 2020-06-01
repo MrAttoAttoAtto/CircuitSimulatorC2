@@ -1,8 +1,9 @@
 from PyQt5.QtCore import Qt, QRectF, QPointF
-from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker, QPainterPath, QFont, QColor, QColorConstants, QBrush
+from PyQt5.QtGui import QPen, QPolygonF, QPainterPathStroker, QPainterPath, QFont, QColor, QBrush
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QDialogButtonBox, QMessageBox, QGraphicsItem, \
     QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsPolygonItem, QGraphicsPathItem, \
     QGraphicsSimpleTextItem
+from pyqtgraph import mkColor
 
 from components.ACVoltageSource import ACVoltageSource
 from components.Capacitor import Capacitor
@@ -17,7 +18,7 @@ from components.VoltageSource import VoltageSource
 from general.Circuit import Circuit
 from ui.utils import defaultPen
 from ui.visuals import CircuitItem, CircuitNode, ColourSelectButton
-from pyqtgraph import mkColor
+
 
 class CircuitSymbol(CircuitItem):
     PREFIX = ""
@@ -113,6 +114,7 @@ class CircuitSymbol(CircuitItem):
         dialog.setLayout(gridLayout)
 
         dialog.exec()
+
     def onAttributesUpdated(self):
         pass
 
@@ -133,6 +135,10 @@ class CircuitSymbol(CircuitItem):
 
     def addToCircuit(self, circuit: Circuit):
         pass
+
+
+def QColorFactory(rgbString: str) -> QColor:
+    return QColor(int(rgbString))
 
 
 def CircuitComponent(cls):
@@ -402,8 +408,8 @@ class GraphicalGround(CircuitSymbol):
 class GraphicalTestPoint(CircuitSymbol):
     PREFIX = "V"
     NAME = "Test Point"
-    ATTRIBUTES = {"colour": [QColor, "Colour", "", ""]}
-    DEFAULT_ATTRIBUTES = {"color": Qt.black}
+    ATTRIBUTES = {"colour": [QColorFactory, "Colour", "", ""]}
+    DEFAULT_ATTRIBUTES = {"colour": Qt.black}
 
     def populateName(self, componentNames: set):
         super().populateName(componentNames)
@@ -506,7 +512,8 @@ class GraphicalMOSFET(CircuitSymbol):
         return QRectF(0, 0, 30, 50)
 
     def addToCircuit(self, circuit: Circuit):
-        mosfet = MOSFET(self.attributes["thresholdVoltage"], self.attributes["width"], self.attributes["length"], self.attributes["specificCapacitance"], self.attributes["electronMobility"])
+        mosfet = MOSFET(self.attributes["thresholdVoltage"], self.attributes["width"], self.attributes["length"],
+                        self.attributes["specificCapacitance"], self.attributes["electronMobility"])
         mosfet._patched_id = self.uid
         circuit.add(mosfet, (self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node))
 
@@ -545,15 +552,15 @@ class GraphicalVCVS(CircuitSymbol):
         vcvs = VCVS(self.attributes["mu"])
         vcvs._patched_id = self.uid
         circuit.add(vcvs, (
-        self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node, self.nodes[3].actual_node))
+            self.nodes[0].actual_node, self.nodes[1].actual_node, self.nodes[2].actual_node, self.nodes[3].actual_node))
 
 
 @CircuitComponent
 class GraphicalAmmeter(CircuitSymbol):
     PREFIX = "I"
     NAME = "Ammeter"
-    ATTRIBUTES = {"colour": [QColor, "Colour", "", ""]}
-    DEFAULT_ATTRIBUTES = {"color": Qt.black}
+    ATTRIBUTES = {"colour": [QColorFactory, "Colour", "", ""]}
+    DEFAULT_ATTRIBUTES = {"colour": Qt.black}
 
     def populateName(self, componentNames: set):
         super().populateName(componentNames)
@@ -590,8 +597,8 @@ class GraphicalAmmeter(CircuitSymbol):
 class GraphicalVoltmeter(CircuitSymbol):
     PREFIX = "V"
     NAME = "Voltmeter"
-    ATTRIBUTES = {"colour": [QColor, "Colour", "", ""]}
-    DEFAULT_ATTRIBUTES = {"color": Qt.black}
+    ATTRIBUTES = {"colour": [QColorFactory, "Colour", "", ""]}
+    DEFAULT_ATTRIBUTES = {"colour": Qt.black}
 
     def populateName(self, componentNames: set):
         super().populateName(componentNames)
